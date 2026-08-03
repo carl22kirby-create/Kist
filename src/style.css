@@ -116,3 +116,8 @@
 .q-evidence-box span{color:white;font-size:13px}
 .q-recommendation{background:rgba(246,196,0,.08);border:1px solid rgba(246,196,0,.3);border-radius:10px;padding:12px;color:white;font-size:13px;margin:14px 0}
 .q-recommendation b{color:var(--gold)}
+
+/* --- Knowledge Base: maturity band display --- */
+.q-maturity-box{border:1px solid rgba(69,165,255,.35);background:rgba(69,165,255,.08);border-radius:10px;padding:12px;margin:14px 0}
+.q-maturity-label{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--blue);margin-bottom:6px}
+.q-maturity-box p{margin:0;color:white;font-size:13px}

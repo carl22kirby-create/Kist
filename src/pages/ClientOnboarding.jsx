@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/moduleLibrary.js";
+import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/knowledgeBase.js";
 
 export default function ClientOnboarding({ data, setData, setPage, setSelectedClient, setCalendarAnchor, onClose }) {
   const [step, setStep] = useState(1);

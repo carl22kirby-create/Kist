@@ -47,13 +47,19 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
         {q.concept && <p className="q-concept">{q.concept}</p>}
         <h3>{q.question}</h3>
         <p className="muted">{q.guidance}</p>
-        {(q.evidenceRequired?.length > 0 || q.observationPoints?.length > 0) && (
+        {(q.evidenceRequired?.length > 0 || q.observationPoints?.length > 0 || q.metrics?.length > 0) && (
           <div className="q-evidence-box">
             {q.evidenceRequired?.length > 0 && (
               <div><b>Expected Evidence</b><span>{q.evidenceRequired.join(", ")}</span></div>
             )}
             {q.observationPoints?.length > 0 && (
               <div><b>Observation Points</b><span>{q.observationPoints.join(", ")}</span></div>
+            )}
+            {q.metrics?.length > 0 && (
+              <div><b>Metrics</b><span>{q.metrics.join(", ")}</span></div>
+            )}
+            {q.frequency && (
+              <div><b>Review Frequency</b><span>{q.frequency}</span></div>
             )}
           </div>
         )}
@@ -64,8 +70,14 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
             </button>
           ))}
         </div>
-        {q.score > 0 && q.score < 4 && q.recommendations && (
-          <p className="q-recommendation"><b>Improvement Advice:</b> {q.recommendations}</p>
+        {q.score > 0 && q.scoringBands && (
+          <div className="q-maturity-box">
+            <span className="q-maturity-label">{q.scoringBands.find((b) => b.score === q.score)?.maturity}</span>
+            <p>{q.scoringBands.find((b) => b.score === q.score)?.description}</p>
+          </div>
+        )}
+        {q.score > 0 && q.improvementBands && (
+          <p className="q-recommendation"><b>Improvement Advice:</b> {q.improvementBands.find((b) => b.score === q.score)?.recommendation}</p>
         )}
         <div className="q-nav">
           <button className="secondary" disabled={currentQuestion === 0} onClick={() => setCurrentQuestion(currentQuestion - 1)}>Previous Question</button>

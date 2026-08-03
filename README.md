@@ -73,42 +73,40 @@ Same checklist as before, worth actually running through once deployed:
 5. Open the site in a private/incognito window — should ask you to log in
    again separately.
 
-## Business Knowledge Engine (v5.0.0)
+## KIST Knowledge Base (v5.1.0)
 
-This replaces the fixed industry/capability/regulatory module arrays from
-v4.3 with a single flat, tagged concept library. There's no such thing as
-"the Logistics module" as a block of content anymore — a module is just a
-saved combination of tags, and any concept can carry tags across as many
-industries, capabilities and regulations as genuinely apply to it. One
-concept (Stock Accuracy, say) is authored once and appears everywhere it's
-tagged, rather than being duplicated per industry.
+The concept library from v5.0 has been split into four independently
+editable layers per concept, rather than one flat object:
 
-Every item in the library is now an **Assessment Item**:
-`concept`, `question`, `category` (still rolls into the 11 KIST DNA
-dimensions), `tags`, `evidenceRequired`, `observationPoints`,
-`scoringGuidance`, `recommendations`. See `src/data/moduleLibrary.js` for
-the concept library itself.
+- **Business Concept** — name, purpose, category, tags. Essentially never
+  changes.
+- **Assessment Method** — the question, evidence required, observation
+  points, metrics, review frequency. How we currently assess it.
+- **Scoring Framework** — six bands (0-5), each with a maturity label
+  (Foundation -> Foundation -> Intermediate -> Advanced -> Best Practice ->
+  Industry Leading) and a description specific to that concept. How we
+  currently score it.
+- **Improvement Library** — a recommendation for each of the six scores.
+  What we currently suggest.
 
-**Dependencies** are the new piece: a Business Profile now also captures a
-small set of yes/no business characteristics (does this business have a
-warehouse, operate its own transport, manufacture, sell online). Answering
-"No" to one of these **hard-excludes** every item carrying the related tag
-— even if another tag on that same item would otherwise include it. This is
-what makes the assessment genuinely shrink as more is learned about a
-business, rather than only ever growing from manual tag selection. See
-`dependencyQuestions` in `moduleLibrary.js` and `activeExclusionsForProfile`
-in `assessmentEngine.js`.
+The maturity label *structure* (six bands, five named tiers) is shared
+across every concept — if the scale itself ever changes, that's one change
+to the shape in `assessmentEngine.js`, not an edit to each concept's
+content. The band *descriptions* and *recommendations* stay specific to
+each concept, since "no stock control" only means something for Stock
+Accuracy.
 
-I verified this behaviour directly before shipping it: with a client tagged
-both Retail and Warehouse, answering "No warehouse" removes Stock Accuracy
-entirely, even though the Retail tag alone would still match it — confirmed
-with an automated test, not just visual inspection.
+See `src/data/knowledgeBase.js` for the concept content itself, and
+`src/utils/assessmentEngine.js` for how it's flattened into the shape the
+rest of the app (scoring, reports, the assessment UI) already understands
+— that flattening is deliberate: the four-layer separation is how the
+Knowledge Base is authored and maintained, not necessarily how every
+downstream feature needs to consume it.
 
-**Content scope, deliberately**: this pass starts with 15 concepts, not
-thousands. The engine and schema are what took the real work; growing the
-library is now a pure content exercise — add an object to
-`conceptLibrary` with the right tags and it's live everywhere those tags
-apply, no other code changes needed.
+I verified the migration preserved every existing test from the previous
+version — flat tag reuse across industries, hard-veto dependency exclusion,
+and no loss of already-scored client answers — before treating this as
+done.
 
 ## Architecture
 

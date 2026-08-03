@@ -385,6 +385,8 @@ export const featureRegister = [
   "Assessment answers persist per client",
   "Dynamic assessment engine (Business Profile driven module matching)",
   "Flat tagged concept library (Assessment Items, not fixed modules)",
+  "KIST Knowledge Base: concept, method, scoring and improvement as separate layers",
+  "Maturity labels (Foundation to Industry Leading) per concept score band",
   "Dependency system: business characteristics hard-exclude related items",
   "Backend API with SQLite database",
   "Dashboard widget preferences synced server-side",
@@ -413,6 +415,7 @@ export const versionHistory = [
   ["v4.1.0", "Client report release: full data-driven printable report per client (KIST Business DNA, category breakdown, key findings pulled from real assessment notes, priority actions, 90 day roadmap), exportable to PDF via browser print"],
   ["v4.2.0", "Assessment redesign: all 250 questions rewritten as genuinely unique, evidence-based, open-ended questions (no yes/no), consultant observation items separated from client questions, Customer Experience mapped to the full discover-to-recommend journey, evidence type shown in the assessment UI and client report"],
   ["v4.3.0", "Dynamic assessment engine: Business Profile added per client (industry, capabilities, regulatory frameworks); 5 industry modules, 16 capability modules, 11 regulatory modules and a universal observation module added and tagged; assessments now assemble dynamically per client rather than showing a fixed question set to everyone"],
-  ["v5.0.0", "Business Knowledge Engine: replaced fixed industry/capability/regulatory module arrays with one flat, tagged concept library (Assessment Items) carrying evidence requirements, observation points, scoring guidance and recommendations per concept; added a hard-veto Dependency system so a business characteristic answered No removes every related item even if another tag would otherwise include it, letting the assessment shrink as more is learned about the business"]
+  ["v5.0.0", "Business Knowledge Engine: replaced fixed industry/capability/regulatory module arrays with one flat, tagged concept library (Assessment Items) carrying evidence requirements, observation points, scoring guidance and recommendations per concept; added a hard-veto Dependency system so a business characteristic answered No removes every related item even if another tag would otherwise include it, letting the assessment shrink as more is learned about the business"],
+  ["v5.1.0", "KIST Knowledge Base: split each concept into four independent layers (Business Concept, Assessment Method, Scoring Framework, Improvement Library) so scoring methodology and improvement advice can be revised globally without touching concept content; added maturity labels (Foundation to Industry Leading) with concept-specific band descriptions and score-specific recommendations shown live in the assessment UI"]
 ];
 

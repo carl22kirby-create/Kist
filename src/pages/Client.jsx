@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tag, Mail, Phone, Layers } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
-import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/moduleLibrary.js";
+import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/knowledgeBase.js";
 import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
 
 export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor }) {
