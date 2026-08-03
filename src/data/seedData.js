@@ -12,30 +12,341 @@ export const categories = [
   "Growth Innovation and Improvement"
 ];
 
-const stems = [
-  "business strategy", "clear objectives", "management rhythm", "leadership ownership", "decision making",
-  "documented processes", "process consistency", "customer response", "complaint handling", "customer retention",
-  "skills and training", "staff engagement", "financial visibility", "margin control", "cash flow forecasting",
-  "sales pipeline", "marketing effectiveness", "system integration", "data accuracy", "automation opportunity",
-  "AI readiness", "risk ownership", "compliance controls", "business continuity", "continuous improvement"
-];
+// Evidence type is inferred from how the question is phrased, so authors
+// don't need to hand-tag all 250 questions individually. Observation items
+// (completed by the consultant directly rather than asked to the client)
+// always require "Observed" regardless of phrasing.
+export function inferEvidenceType(text) {
+  if (/what evidence/i.test(text)) return "Documented";
+  if (/how is .*(measured|tracked)|how do you know/i.test(text)) return "Measured";
+  if (/show me|walk me through/i.test(text)) return "Demonstrated";
+  if (/how confident|verified|confirm/i.test(text)) return "Verified";
+  return "Explained";
+}
 
-export const questionsSeed = Array.from({ length: 250 }, (_, i) => {
-  const category = categories[i % categories.length];
-  const stem = stems[i % stems.length];
-  return {
-    id: i + 1,
-    category,
-    question: `How effective is the business at managing ${stem}?`,
-    guidance: `Review evidence of ${stem}, ownership, consistency, maturity and measurable impact.`,
-    score: 0,
-    notes: "",
-    evidence: "",
-    action: "",
-    risk: "Medium",
-    priority: "Medium"
-  };
-});
+// Only Customer Experience is tagged per-question against the specific
+// journey stage (discover, research, contact, visit, buy, service,
+// aftercare, loyalty, recommend) since that's the discipline the brief maps
+// most explicitly onto a customer's real journey through the business.
+// Every other category defaults to a single representative stage — still
+// journey-aware, without hand-tagging 250 individual stages.
+const defaultJourneyStage = {
+  "Strategy and Direction": "Internal",
+  "Leadership and Accountability": "Internal",
+  "Operations and Process": "Service",
+  "Customer Experience": null, // set per question below
+  "People and Capability": "Internal",
+  "Finance and Commercial Control": "Internal",
+  "Sales and Marketing": "Contact",
+  "Technology and Systems": "Internal",
+  "AI Readiness and Automation": "Internal",
+  "Risk Compliance and Resilience": "Internal",
+  "Growth Innovation and Improvement": "Internal"
+};
+
+// Each entry is either a plain question string, or { q, observation: true }
+// for items the consultant scores from direct observation rather than by
+// asking the client — e.g. website appearance, reception cleanliness,
+// signage, staff interaction on arrival. These still get scored 1-5 like
+// any other question; they're just sourced differently.
+const questionBank = {
+  "Strategy and Direction": [
+    "Explain how the business defines what makes it different from competitors, and how that difference is communicated to customers.",
+    "Walk me through how the current business strategy was developed and who was involved in shaping it.",
+    "What evidence exists that the strategy is written down, shared, and understood beyond the owner or senior team?",
+    "How is progress against strategic goals measured, and how often is that review carried out?",
+    "Describe a recent decision that was made specifically because it aligned with long term strategy rather than short term pressure.",
+    "What would happen to this business if its biggest customer left tomorrow, and how prepared is the plan for that scenario?",
+    "How do you know whether the business is growing in the direction you actually want it to grow in?",
+    "Show me how the strategic plan connects to what individual teams are actually working on day to day.",
+    "Explain how pricing decisions reflect the position the business wants to hold in its market.",
+    "What formal process exists for reviewing whether the business should exit, add, or change any part of what it offers?",
+    "How is the competitive landscape monitored, and what has changed in your approach as a result?",
+    "Describe how new opportunities are identified before a competitor gets there first.",
+    "What evidence shows that strategic direction has actually changed behaviour in the business, rather than just existing as a document?",
+    "How do you decide what not to pursue, and who has the authority to say no to a new opportunity?",
+    "Explain how the business plans financially for its strategic ambitions over the next three years.",
+    "What happens when a strategic initiative fails to deliver the expected result?",
+    "How is the wider team kept informed of strategic direction, and what evidence shows they understand it?",
+    "Describe how customer feedback directly influences strategic decisions, with a specific example.",
+    "What role does succession planning play in the current strategic direction of the business?",
+    "How confident is leadership that the current strategy remains relevant given recent market changes, and what is that confidence based on?",
+    "Show me the most recent strategic review documentation and what actions came out of it.",
+    "Explain how risk appetite is factored into strategic decision making."
+  ],
+  "Leadership and Accountability": [
+    "Describe how leadership decisions get communicated down through the business, using a recent example.",
+    "What happens when someone in the business makes a mistake, and how is that handled by their manager?",
+    "How is underperformance identified and addressed, and what evidence shows that process being followed?",
+    "Explain how leaders in this business hold themselves accountable when targets are missed.",
+    "What evidence exists that leadership behaviour reflects the values the business claims to hold?",
+    "How do employees know who is responsible for which decisions across the business?",
+    "Describe a time leadership changed its mind based on feedback from the team.",
+    "What formal mechanism exists for employees to challenge a decision made by leadership?",
+    "How is leadership performance itself reviewed, and by whom?",
+    "Explain how decisions are made when leaders disagree with one another.",
+    "What evidence shows leadership visibly supporting change initiatives rather than just approving them?",
+    "How quickly are decisions typically made in this business, and what slows that down when it happens?",
+    "Describe how new managers are supported and developed once they take on leadership responsibility.",
+    "What happens if a manager consistently fails to hold their team accountable?",
+    "How is accountability distributed below senior leadership, into middle management and team leads?",
+    "Explain how leadership decisions are documented and made available to the people affected by them.",
+    "What evidence demonstrates that leadership acts on staff feedback rather than simply collecting it?",
+    "How do leaders in this business demonstrate the standards they expect from others?",
+    "Describe how conflict between departments gets resolved, and who owns that resolution.",
+    "What measurable difference has leadership made to performance in the last twelve months?",
+    "How is trust built between leadership and frontline staff, and what evidence supports that?",
+    "Explain the process for escalating a decision that a manager isn't authorised to make.",
+    "What contingency exists if a key leader was unexpectedly unavailable for an extended period?"
+  ],
+  "Operations and Process": [
+    "Walk me through what happens from the moment an order or job is confirmed to the moment it's delivered.",
+    "Show me how a process is documented, and how a new starter would learn to follow it correctly.",
+    "What happens when a process breaks down partway through, and who is responsible for fixing it?",
+    "Describe how bottlenecks in the operation are identified and what has been done about the most recent one.",
+    "How is quality checked before something reaches the customer, and what evidence shows that check happening consistently?",
+    "Explain how capacity is planned when demand increases suddenly.",
+    "What evidence exists that processes are reviewed and improved rather than just repeated the same way indefinitely?",
+    "How do you know when a process is no longer fit for purpose?",
+    "Describe what happens when two departments need to hand work between each other, using a real example.",
+    "What happens if a key piece of equipment or system fails during operating hours?",
+    "How is consistency maintained across different locations, shifts, or team members delivering the same service?",
+    "Explain how supplier reliability is measured and what happens when a supplier underperforms.",
+    "What evidence shows that operational decisions are based on data rather than instinct alone?",
+    "Describe the last time a process change was made, and how its impact was measured afterwards.",
+    "How are exceptions to the standard process handled, and who has authority to approve them?",
+    "What happens when workload exceeds the team's normal capacity?",
+    "Explain how operational risk is identified before it becomes an operational failure.",
+    "How is stock, materials, or resource availability tracked to avoid delays?",
+    "What evidence demonstrates that health and safety standards are followed on the ground, not just written down?",
+    "What evidence demonstrates that lessons from operational mistakes get shared so they aren't repeated?",
+    "How is turnaround time measured, and how does it compare with what customers are told to expect?",
+    "Explain how seasonal or cyclical demand changes are planned for in advance.",
+    "What role does technology play in reducing manual effort in your core operational process?",
+    "Describe how the operational process is monitored in real time, and what triggers intervention."
+  ],
+  "Customer Experience": [
+    { q: "Walk me through what a first time customer sees, hears and experiences from their very first search for this business online.", stage: "Discover" },
+    { q: "How accurate and current is this business's Google Business Profile, and how is that kept up to date?", stage: "Discover", observation: true },
+    { q: "Explain how quickly and in what way a new enquiry typically receives its first response.", stage: "Contact" },
+    { q: "Describe what happens when a customer calls and no one is immediately available to answer.", stage: "Contact" },
+    { q: "How professional, welcoming and easy to navigate is arrival at this business for a new customer, from parking to being greeted?", stage: "Visit", observation: true },
+    { q: "What evidence shows that reception or first contact staff are trained specifically in how they welcome people?", stage: "Visit" },
+    { q: "Describe how a customer's needs are established before a sale is proposed.", stage: "Buy" },
+    { q: "What happens if a customer wants to change or cancel an order after it's been placed?", stage: "Buy" },
+    { q: "How is the customer kept informed while their order, project or service is being delivered?", stage: "Service" },
+    { q: "Explain what happens immediately after a customer receives their product or service, in terms of any follow up.", stage: "Aftercare" },
+    { q: "What evidence shows that customer feedback is actively collected, not just welcomed if it happens to arrive?", stage: "Aftercare" },
+    { q: "Describe a specific change made in the last year as a direct result of a customer complaint.", stage: "Aftercare" },
+    { q: "How do you know whether customers would recommend this business to someone else?", stage: "Recommend" },
+    { q: "What does the business do differently for a returning customer compared with a first time customer?", stage: "Loyalty" },
+    { q: "Explain how consistent the customer experience is across different staff members or locations.", stage: "Visit" },
+    { q: "What evidence demonstrates that online reviews are monitored and responded to?", stage: "Research" },
+    { q: "How comfortable and well managed is the waiting experience for a customer, and what's been done to actively improve it?", stage: "Visit", observation: true },
+    { q: "How is a complaint escalated if the person handling it can't resolve it themselves?", stage: "Aftercare" },
+    { q: "What happens when a customer is dissatisfied but doesn't complain outright?", stage: "Aftercare" },
+    { q: "Explain how the business measures customer satisfaction beyond assumption or anecdote.", stage: "Aftercare" },
+    { q: "How accessible is this business for a customer with additional needs?", stage: "Visit", observation: true },
+    { q: "How positive and memorable is the final impression left at the end of a customer interaction?", stage: "Recommend", observation: true },
+    { q: "How does the brand experience stay consistent between the website, social media and in person?", stage: "Discover", observation: true },
+    { q: "Describe how customer expectations are set at the start of a relationship, and how well the business lives up to them.", stage: "Buy" }
+  ],
+  "People and Capability": [
+    "Walk me through how a new starter is inducted into this business in their first week.",
+    "What evidence shows that training actually improves performance rather than simply being delivered?",
+    "Describe how skills gaps across the team are identified before they become a problem.",
+    "How is performance reviewed, and what happens as a direct result of that review?",
+    "Explain what career progression genuinely looks like for someone joining this business today.",
+    "What evidence demonstrates that staff understand what's expected of them in their role?",
+    "Describe how the business measures staff engagement, and what's changed as a result of the last measurement.",
+    "What happens when someone is clearly not suited to their role?",
+    "How is knowledge retained when an experienced member of staff leaves the business?",
+    "Explain how staff are recognised or rewarded for going beyond what's expected.",
+    "What evidence shows that management actually acts on what staff raise in one to ones or reviews?",
+    "Describe the last time a training investment was evaluated for the return it delivered.",
+    "How is capability planned for future needs, rather than just current gaps?",
+    "What happens if two team members are in ongoing conflict with each other?",
+    "Explain how flexible working or wellbeing support actually works in practice, not just on paper.",
+    "What evidence exists that recruitment brings in the right people rather than just available people?",
+    "Describe how consistently company culture is experienced by someone in a different team or shift.",
+    "How is underperformance distinguished from a lack of proper training or support?",
+    "What happens during a probation period that genuinely tests whether someone is right for the role?",
+    "Explain how staff turnover is tracked and what it's told you about the business recently.",
+    "What evidence shows that internal communication actually reaches frontline staff, not just management?",
+    "Describe how the business prepares people to take on more responsibility before they're promoted."
+  ],
+  "Finance and Commercial Control": [
+    "Walk me through how you know, right now, whether this month is profitable.",
+    "What evidence shows that pricing decisions are based on actual cost and margin data?",
+    "Describe how cash flow is forecast, and how far ahead that forecast typically looks.",
+    "What happens when actual performance falls significantly short of budget?",
+    "Explain how you know which products, services or clients are actually profitable versus which only appear to be.",
+    "What evidence demonstrates that financial data is reviewed regularly by someone with the authority to act on it?",
+    "Describe the process for approving spend above a certain threshold.",
+    "How is bad debt or late payment identified early, and what's done about it?",
+    "What happens if a large customer or contract is suddenly lost?",
+    "Explain how financial reporting reaches decision makers, and how quickly.",
+    "What evidence shows that cost control decisions are based on data rather than gut feeling?",
+    "Describe how commercial risk is assessed before entering a new contract or partnership.",
+    "How confident are you in the accuracy of the numbers being reported, and what gives you that confidence?",
+    "What happens when there's a discrepancy between what's forecast and what actually lands?",
+    "Explain how working capital is managed during periods of rapid growth or slow trading.",
+    "What evidence demonstrates that overheads are reviewed for value, not just paid automatically?",
+    "Describe how financial targets cascade down from the top of the business to individual teams.",
+    "What contingency exists if a key financial system or process failed overnight?",
+    "How is return on investment measured for major purchases or projects?",
+    "Explain how commercial decisions balance short term cash needs against long term value.",
+    "What evidence shows that the business understands its break even position at any given time?",
+    "Describe how currency, supplier price changes or inflation risk is planned for.",
+    "How is financial information communicated to non finance staff so they understand its impact on their role?"
+  ],
+  "Sales and Marketing": [
+    "Walk me through the exact journey a lead takes from first enquiry to becoming a paying customer.",
+    "What evidence shows which marketing activity actually generates paying customers, rather than just enquiries?",
+    "Describe how quickly a new enquiry is followed up, and what happens if it isn't.",
+    "What happens to a lead that doesn't convert straight away?",
+    "Explain how the sales process differs, if at all, depending on who handles the enquiry.",
+    "How effectively does the website communicate what this business offers, build trust and convert visitors into enquiries?",
+    "Describe how pricing is presented and negotiated with a hesitant customer.",
+    "How is marketing spend justified, and what return is expected from it?",
+    "What happens when a competitor undercuts your price on a deal you want to win?",
+    "How consistent is your brand messaging across your website, social channels and printed material?",
+    "What evidence shows that customer testimonials or case studies are actively used in the sales process?",
+    "Describe how a lost sale is reviewed to understand why it was lost.",
+    "How is the sales pipeline tracked, and how confident are you in the numbers in it right now?",
+    "What happens to existing customers in terms of upsell or repeat business opportunity?",
+    "Explain how referrals are actively encouraged rather than simply hoped for.",
+    "What evidence demonstrates that social media activity translates into any commercial outcome?",
+    "Describe how a new team member would be trained to sell in a way consistent with the rest of the team.",
+    "What happens when demand exceeds what the business can currently deliver?",
+    "How is customer data used to target marketing rather than sending the same message to everyone?",
+    "Explain what makes your value proposition different from the nearest competitor, in the customer's own words if possible.",
+    "What evidence shows that marketing and sales teams are aligned on what a qualified lead actually looks like?",
+    "Describe the last campaign that was stopped early because it wasn't working, and how that was decided.",
+    "How do you know your current customers would describe your value proposition the same way you do?"
+  ],
+  "Technology and Systems": [
+    "Walk me through the core systems this business relies on daily, and how well they talk to each other.",
+    "What happens when a core system goes down during business hours?",
+    "Describe how data entered in one system ends up being used, or duplicated, elsewhere in the business.",
+    "What evidence shows that staff are properly trained on the systems they use daily?",
+    "How is system access removed when someone leaves the business?",
+    "Explain what would happen if you lost access to your main system for a full working day.",
+    "What evidence demonstrates that data across your systems is accurate and trustworthy?",
+    "Describe the last time a system upgrade or change caused unexpected disruption.",
+    "How are manual, paper based or spreadsheet processes identified as candidates for better systems?",
+    "What happens to customer data captured on paper or verbally, in terms of it entering a proper system?",
+    "Explain how decisions get made about which new technology investments are worth making.",
+    "What evidence shows the systems in place actually save time rather than create extra work?",
+    "Describe how backup and data recovery would work if something was lost or corrupted.",
+    "How confident are you that your systems could handle double the current volume of business?",
+    "What happens when different teams use different, disconnected tools for the same purpose?",
+    "Explain how a new starter gets access to the systems they need, and how long that typically takes.",
+    "What evidence demonstrates that reporting from your systems is trusted enough to make decisions on?",
+    "Describe how mobile or remote access to systems works for staff who aren't at a desk.",
+    "How is technology spend reviewed to check it's still delivering value?",
+    "What happens when a system is clearly no longer fit for the way the business now operates?",
+    "How professional, fast and reliable is your customer facing technology, such as your website or booking system, when tested as a customer would experience it?",
+    "What evidence shows your systems support growth rather than becoming a constraint on it?"
+  ],
+  "AI Readiness and Automation": [
+    "Walk me through any part of the business where a repetitive manual task has already been automated.",
+    "What evidence shows the team understands what AI or automation could realistically do for this business?",
+    "Describe the last manual, repetitive task someone complained about, and what's been done about it.",
+    "What happens currently when the same piece of information has to be typed into more than one place?",
+    "Explain how ready your current data actually is to be used by an automated tool or AI system.",
+    "What evidence demonstrates leadership has explored automation options rather than assumed they're not relevant?",
+    "Describe a task currently done by a person that could plausibly be done faster or more consistently by a tool.",
+    "What happens to the time saved when something has previously been automated in this business?",
+    "How is customer facing communication currently handled that could be supported by automation without losing personal touch?",
+    "Explain what concerns, if any, staff have raised about automation or AI, and how those have been addressed.",
+    "What evidence shows the business has evaluated the cost and risk of automation against the benefit?",
+    "Describe how confident you are that your current systems could support automation without major rework.",
+    "What happens when a competitor starts using automation to respond to customers faster than you can?",
+    "How is data quality maintained well enough that automation could rely on it without human double checking?",
+    "Explain any experiment, pilot or trial the business has run with AI or automation tools so far.",
+    "What evidence demonstrates staff would be supported to adapt if automation changed part of their role?",
+    "Describe how decisions are currently made about which tasks are worth automating first.",
+    "What happens to accuracy and consistency when the same task is done by different people versus a single automated process?",
+    "How is the business currently using data to predict rather than just record what's happened?",
+    "Explain what's stopping this business from automating more than it currently does.",
+    "What evidence shows leadership has a realistic view of where AI could help versus where it's unnecessary or risky?"
+  ],
+  "Risk Compliance and Resilience": [
+    "Walk me through the biggest risk to this business continuing to operate as normal tomorrow.",
+    "What evidence shows compliance requirements are actually being met, not just understood?",
+    "Describe what would happen if your main premises became unusable overnight.",
+    "What happens when a new regulation or legal requirement affects how the business operates?",
+    "Explain how risks are identified before they become actual problems.",
+    "What evidence demonstrates that a documented risk register or equivalent is kept current?",
+    "Describe the last time a compliance audit or check was carried out, and what it found.",
+    "What happens if a key supplier or partner suddenly became unable to deliver?",
+    "How is data protection and customer privacy actually managed day to day, not just documented?",
+    "Explain what contingency exists if your business lost access to a critical member of staff unexpectedly.",
+    "What evidence shows insurance cover has been reviewed against actual current risk?",
+    "Describe how a serious incident, accident or near miss would be reported and investigated.",
+    "What happens when a supplier contract or compliance certificate is due to expire?",
+    "How confident are you that the business could continue trading through a significant disruption?",
+    "Explain how staff are trained to recognise and report risk or compliance concerns.",
+    "How consistently are health and safety standards visibly followed in practice, rather than just documented in policy?",
+    "Describe what would happen if sensitive customer or business data was accidentally exposed.",
+    "What happens when a risk is identified but there's no immediate budget to address it?",
+    "How is reputational risk considered before making a public facing decision?",
+    "Explain how financial risk exposure is reviewed across current contracts and commitments.",
+    "What evidence shows that lessons from a past incident changed how the business now operates?",
+    "Describe how resilient the business would be if demand suddenly dropped by half.",
+    "What happens if a director or senior leader was unexpectedly unable to continue in their role?"
+  ],
+  "Growth Innovation and Improvement": [
+    "Walk me through the last genuinely new idea this business tried, and what happened to it.",
+    "What evidence shows that ideas from staff are actively collected and considered?",
+    "Describe how the business decides which improvement ideas are worth pursuing and which aren't.",
+    "What happens to an idea once it's suggested, in terms of who owns taking it forward?",
+    "Explain how you know whether a recent change actually improved anything.",
+    "What evidence demonstrates that the business learns from failed initiatives rather than just moving on?",
+    "Describe the biggest opportunity for growth the business currently isn't pursuing, and why.",
+    "What happens when growth outpaces the systems or team currently in place?",
+    "How is innovation balanced against the risk of disrupting what's already working?",
+    "Explain what resource, time or budget is specifically set aside for improvement work.",
+    "What evidence shows the business benchmarks itself against competitors or best practice?",
+    "Describe how customer or staff feedback has directly shaped a recent improvement.",
+    "What happens when an improvement project is only partly successful?",
+    "How confident are you that this business is improving faster than, or at least as fast as, its competitors?",
+    "Explain how new markets, products or services are explored before committing serious investment.",
+    "What evidence demonstrates continuous improvement is a genuine habit rather than an occasional event?",
+    "Describe how the business balances protecting current revenue against pursuing new opportunity.",
+    "What happens to improvement momentum after the initial enthusiasm for a new idea fades?",
+    "How is success measured for an innovation or improvement project, before it even starts?",
+    "Explain what the business has stopped doing recently because it no longer added value.",
+    "What evidence shows leadership actively seeks out ideas rather than waiting for them to arrive?",
+    "Describe the culture around trying something new and it not working out as planned.",
+    "What would meaningful, sustained growth actually look like for this business over the next three years?"
+  ]
+};
+
+export const questionsSeed = categories.flatMap((category) =>
+  questionBank[category].map((entry) => {
+    const isObject = typeof entry === "object";
+    const text = isObject ? entry.q : entry;
+    const isObservation = isObject && !!entry.observation;
+    return {
+      category,
+      question: text,
+      type: isObservation ? "observation" : "question",
+      evidenceType: isObservation ? "Observed" : inferEvidenceType(text),
+      journeyStage: (isObject && entry.stage) || defaultJourneyStage[category],
+      guidance: isObservation
+        ? "Score this from direct observation during the visit rather than by asking the client. Evidence should always outweigh opinion."
+        : "Score based on what is demonstrated, documented or measured — not simply what is claimed.",
+      score: 0,
+      notes: "",
+      evidence: "",
+      action: "",
+      risk: "Medium",
+      priority: "Medium"
+    };
+  })
+).map((q, i) => ({ id: i + 1, ...q }));
 
 export function freshAssessment() {
   return questionsSeed.map((q) => ({ ...q }));
@@ -68,10 +379,12 @@ export const featureRegister = [
   "Rescheduling updates dashboard",
   "Visit workflow restored layout",
   "Embedded assessment inside visit workflow",
-  "250 questions restored",
+  "250 universal questions plus industry, capability and regulatory modules",
   "11 categories restored",
   "Category navigation restored",
   "Assessment answers persist per client",
+  "Dynamic assessment engine (Business Profile driven module matching)",
+  "Industry, capability and regulatory modules tagged and matchable",
   "Backend API with SQLite database",
   "Dashboard widget preferences synced server-side",
   "Printable, data-driven client report (PDF export)",
@@ -96,6 +409,8 @@ export const versionHistory = [
   ["v2.3.0", "Backend and database release: Node + SQLite API replaces localStorage, dashboard widget prefs synced server-side"],
   ["v3.0.0", "Auth and Postgres release: password login with sessions, SQLite migrated to Postgres, Railway deployment config"],
   ["v4.0.0", "Vercel and Supabase release: backend rewritten as serverless functions, database logic moved into Postgres RPC functions, deployed to a dedicated Supabase project"],
-  ["v4.1.0", "Client report release: full data-driven printable report per client (KIST Business DNA, category breakdown, key findings pulled from real assessment notes, priority actions, 90 day roadmap), exportable to PDF via browser print"]
+  ["v4.1.0", "Client report release: full data-driven printable report per client (KIST Business DNA, category breakdown, key findings pulled from real assessment notes, priority actions, 90 day roadmap), exportable to PDF via browser print"],
+  ["v4.2.0", "Assessment redesign: all 250 questions rewritten as genuinely unique, evidence-based, open-ended questions (no yes/no), consultant observation items separated from client questions, Customer Experience mapped to the full discover-to-recommend journey, evidence type shown in the assessment UI and client report"],
+  ["v4.3.0", "Dynamic assessment engine: Business Profile added per client (industry, capabilities, regulatory frameworks); 5 industry modules, 16 capability modules, 11 regulatory modules and a universal observation module added and tagged; assessments now assemble dynamically per client rather than showing a fixed question set to everyone"]
 ];
 

@@ -16,7 +16,7 @@ export default function Assessments({ data, setData, selectedClient, setSelected
 
   return (
     <section>
-      <PageHeader title="Assessment Engine" subtitle="250 questions restored with 11 category navigation." action={<button className="primary">Save Assessment</button>} />
+      <PageHeader title="Assessment Engine" subtitle="Dynamically assembled per client: universal questions plus matched industry, capability and regulatory modules." action={<button className="primary">Save Assessment</button>} />
       <div className="card"><label>Client<select value={clientId} onChange={(e) => chooseClient(e.target.value)}>{data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label></div>
       <AssessmentPanel answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />
     </section>

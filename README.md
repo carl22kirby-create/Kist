@@ -73,6 +73,30 @@ Same checklist as before, worth actually running through once deployed:
 5. Open the site in a private/incognito window — should ask you to log in
    again separately.
 
+## Dynamic Assessment Engine (v4.3.0)
+
+The 250-question assessment is now the Universal layer only. Each client also
+has a Business Profile (industry, capabilities, regulatory frameworks) set
+in Client Onboarding or edited later on the Client page. The actual
+assessment a consultant sees is assembled live from:
+
+- **Universal** (250 questions) — always included
+- **Industry module** — one, based on the client's primary industry
+- **Capability modules** — any that apply (fleet, warehouse, ecommerce, etc.)
+- **Regulatory modules** — any that apply (ISO 9001, GDPR, etc.)
+- **Observation module** — always included, scored by the consultant directly
+
+This is already live on the real database — I added a `profile` JSONB
+column to `clients` and updated `get_full_data`/`replace_full_data` to carry
+it, and tested the round trip directly against the project before writing
+any app code. If you ever rebuild this schema from scratch, the migration
+files in `supabase/migrations/` are in order and include this change.
+
+The starter modules (5 industries, 16 capabilities, 11 regulatory
+frameworks) are intentionally lean — a handful of genuine questions each,
+not padded for volume. Expanding any one of them is a content change in
+`src/data/moduleLibrary.js` only; the engine itself doesn't need touching.
+
 ## Architecture
 
 - **Frontend**: unchanged from the Railway version — same pages, same

@@ -134,7 +134,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
           <section className="report-section">
             <h2>Key Findings</h2>
             <table className="report-table report-findings">
-              <thead><tr><th>Category</th><th>Finding</th><th>Score</th></tr></thead>
+              <thead><tr><th>Category</th><th>Finding</th><th>Evidence</th><th>Score</th></tr></thead>
               <tbody>
                 {findings.map((q) => (
                   <tr key={q.id}>
@@ -144,6 +144,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
                       {q.notes && <div className="report-finding-note">{q.notes}</div>}
                       {q.action && <div className="report-finding-action">Recommended action: {q.action}</div>}
                     </td>
+                    <td>{q.evidenceType || "Explained"}</td>
                     <td className="report-table-score">{q.score}/5</td>
                   </tr>
                 ))}

@@ -75,3 +75,23 @@
   .report-page{padding:30px 22px}
   .report-summary-grid,.report-dna-layout,.report-two-col,.report-roadmap{grid-template-columns:1fr}
 }
+
+/* --- Assessment question tags (evidence type, observation vs question, journey stage) --- */
+.q-tags{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.q-badge{font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:5px 10px;border-radius:20px}
+.q-badge-question{background:rgba(69,165,255,.15);color:var(--blue);border:1px solid rgba(69,165,255,.35)}
+.q-badge-observation{background:rgba(104,216,87,.15);color:var(--green);border:1px solid rgba(104,216,87,.35)}
+.q-badge-evidence{background:rgba(255,255,255,.08);color:var(--muted);border:1px solid var(--line)}
+.q-badge-stage{background:rgba(246,196,0,.12);color:var(--gold);border:1px solid rgba(246,196,0,.35)}
+
+/* --- Business Profile and module chips --- */
+.module-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.module-chip{font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;border:1px solid var(--line)}
+.module-chip-industry{background:rgba(246,196,0,.14);color:var(--gold);border-color:rgba(246,196,0,.35)}
+.module-chip-capability{background:rgba(69,165,255,.14);color:var(--blue);border-color:rgba(69,165,255,.35)}
+.module-chip-regulatory{background:rgba(255,92,92,.12);color:#ff8a8a;border-color:rgba(255,92,92,.35)}
+.module-chip-always-on{background:rgba(255,255,255,.06);color:var(--muted)}
+.profile-subhead{margin:16px 0 8px;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+.profile-editor{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+.profile-editor label{display:grid;gap:6px;color:var(--muted);margin-bottom:12px}
+.assessment-subhead{font-size:12px;margin:-8px 0 16px}

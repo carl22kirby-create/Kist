@@ -1,11 +1,24 @@
 import { useState } from "react";
-import { Tag, Mail, Phone } from "lucide-react";
+import { Tag, Mail, Phone, Layers } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
+import { industryOptions, capabilityOptions, regulatoryOptions } from "../data/moduleLibrary.js";
+import { activeModulesForProfile } from "../utils/assessmentEngine.js";
 
 export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const [showBooking, setShowBooking] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [booking, setBooking] = useState({ date: "2026-07-08", start: "09:00", end: "10:00", type: "First Consultation", consultant: "Carl Kirby", location: client.address || "" });
+  const profile = client.profile || { industry: "Other", capabilities: [], regulations: [] };
+  const activeModules = activeModulesForProfile(profile);
+
+  function updateProfile(next) {
+    setData({ ...data, clients: data.clients.map((c) => c.id === client.id ? { ...c, profile: next } : c) });
+  }
+  function toggleInProfile(key, value) {
+    const list = profile[key] || [];
+    updateProfile({ ...profile, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] });
+  }
 
   function book() {
     const appointment = { id: "s" + Date.now(), date: booking.date, start: booking.start, end: booking.end, clientId: client.id, client: client.name, type: booking.type, consultant: booking.consultant, location: booking.location, status: "Scheduled", colour: "gold" };
@@ -55,6 +68,41 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
               <div className="row" key={s.id}><span><strong>{s.type}</strong><small>{s.date} · {s.start} to {s.end}</small></span><b>{s.status}</b></div>
             ))
             : <p className="muted">No diary entries yet.</p>}
+        </div>
+        <div className="card wide">
+          <h2><Layers size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Business Profile and Active Modules</h2>
+          <p className="muted">This drives which assessment questions apply to this client — the engine assembles a different question set per client based on what's selected here.</p>
+          <div className="module-chip-row">
+            {activeModules.map((m) => <span className={`module-chip module-chip-${m.type.toLowerCase().replace(/\s+/g, "-")}`} key={m.type + m.name}>{m.name}</span>)}
+          </div>
+          <button className="secondary" onClick={() => setShowProfile(!showProfile)}>{showProfile ? "Hide" : "Edit"} Business Profile</button>
+          {showProfile && (
+            <div className="profile-editor">
+              <label>Primary Industry Module
+                <select value={profile.industry || "Other"} onChange={(e) => updateProfile({ ...profile, industry: e.target.value })}>
+                  {industryOptions.map((i) => <option key={i}>{i}</option>)}
+                </select>
+              </label>
+              <h4 className="profile-subhead">Capabilities</h4>
+              <div className="checklist">
+                {capabilityOptions.map((cap) => (
+                  <label className="check-row" key={cap}>
+                    <input type="checkbox" checked={(profile.capabilities || []).includes(cap)} onChange={() => toggleInProfile("capabilities", cap)} />
+                    {cap}
+                  </label>
+                ))}
+              </div>
+              <h4 className="profile-subhead">Regulatory Frameworks</h4>
+              <div className="checklist">
+                {regulatoryOptions.map((reg) => (
+                  <label className="check-row" key={reg}>
+                    <input type="checkbox" checked={(profile.regulations || []).includes(reg)} onChange={() => toggleInProfile("regulations", reg)} />
+                    {reg}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="card wide">
           <h2>Client Timeline</h2>

@@ -1,4 +1,5 @@
-import { categories, freshAssessment } from "../data/seedData.js";
+import { categories } from "../data/seedData.js";
+import { buildAssessmentForClient } from "./assessmentEngine.js";
 
 export function calculateOverall(answers) {
   const a = answers.filter((x) => x.score > 0);
@@ -18,12 +19,21 @@ export function categoryScores(answers) {
   });
 }
 
-// Assessment answers are stored per-client on data.assessments[clientId].
-// This is the fix for the bug where progress reset every time you left the
-// Assessment / Visit Workflow page: previously each page held its own
-// useState(questionsSeed) with nothing written back to shared data.
+// Assessment answers are stored per-client on data.assessments[clientId],
+// keyed by question id. The actual set of questions a client sees comes
+// from the dynamic engine (Universal + whichever Industry/Capability/
+// Regulatory modules match their Business Profile), recomputed live each
+// time rather than stored as a fixed snapshot. Any question the client has
+// already been scored on keeps that answer even if their profile changes
+// later; any newly-matching module question simply appears alongside it,
+// unanswered, ready to be scored.
 export function getClientAssessment(data, clientId) {
-  return (data.assessments && data.assessments[clientId]) || freshAssessment();
+  const client = data.clients.find((c) => c.id === clientId);
+  const profile = client?.profile || {};
+  const current = buildAssessmentForClient(profile);
+  const saved = (data.assessments && data.assessments[clientId]) || [];
+  const savedById = new Map(saved.map((q) => [q.id, q]));
+  return current.map((q) => savedById.get(q.id) || q);
 }
 
 export function setClientAssessment(data, setData, clientId, nextAnswers) {

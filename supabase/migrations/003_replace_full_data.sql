@@ -2,6 +2,10 @@
 -- Runs entirely inside Postgres as a single function call, which keeps this
 -- atomic without needing a client-side transaction — important for
 -- serverless functions, which don't hold a long-lived DB connection open.
+--
+-- Updated 2026-08-03 to include the client "profile" JSONB column
+-- (Business Profile: industry, capabilities, regulatory frameworks) added
+-- by migration 005. This is the current live version on Supabase.
 CREATE OR REPLACE FUNCTION replace_full_data(payload jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -26,12 +30,13 @@ BEGIN
 
   FOR c IN SELECT * FROM jsonb_array_elements(COALESCE(payload->'clients', '[]'::jsonb))
   LOOP
-    INSERT INTO clients (id, name, industry, size, turnover, website, address, score, previous, health, status, notes)
+    INSERT INTO clients (id, name, industry, size, turnover, website, address, score, previous, health, status, notes, profile)
     VALUES (
       c->>'id', c->>'name', COALESCE(c->>'industry',''), COALESCE(c->>'size',''),
       COALESCE(c->>'turnover',''), COALESCE(c->>'website',''), COALESCE(c->>'address',''),
       COALESCE((c->>'score')::int, 0), COALESCE((c->>'previous')::int, 0),
-      COALESCE(c->>'health',''), COALESCE(c->>'status',''), COALESCE(c->>'notes','')
+      COALESCE(c->>'health',''), COALESCE(c->>'status',''), COALESCE(c->>'notes',''),
+      COALESCE(c->'profile', '{}'::jsonb)
     );
 
     IF c->'tags' IS NOT NULL THEN

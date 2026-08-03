@@ -11,7 +11,8 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
   return (
     <div className="assessment-embed">
       <div className="assessment-sidebar">
-        <h2>250 Point Assessment</h2>
+        <h2>{answers.length} Point Assessment</h2>
+        <p className="muted assessment-subhead">Assembled for this client's profile — universal questions plus matched industry, capability and regulatory modules.</p>
         <div className="assessment-summary">
           <strong>{calculateOverall(answers)}</strong>
           <span>Overall Score</span>
@@ -30,7 +31,18 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
         </div>
       </div>
       <div className="assessment-question">
-        <span className="gold">{q.category}</span>
+        <div className="q-tags">
+          <span className="gold">{q.category}</span>
+          {q.type === "observation" ? (
+            <span className="q-badge q-badge-observation">Consultant Observation</span>
+          ) : (
+            <span className="q-badge q-badge-question">Ask the Client</span>
+          )}
+          <span className="q-badge q-badge-evidence">Evidence: {q.evidenceType}</span>
+          {q.journeyStage && q.journeyStage !== "Internal" && (
+            <span className="q-badge q-badge-stage">{q.journeyStage} Stage</span>
+          )}
+        </div>
         <h2>Question {currentQuestion + 1} of {answers.length}</h2>
         <h3>{q.question}</h3>
         <p className="muted">{q.guidance}</p>
@@ -45,7 +57,7 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
           <button className="secondary" disabled={currentQuestion === 0} onClick={() => setCurrentQuestion(currentQuestion - 1)}>Previous Question</button>
           <button className="secondary" disabled={currentQuestion === answers.length - 1} onClick={() => setCurrentQuestion(currentQuestion + 1)}>Next Question</button>
         </div>
-        <textarea placeholder="Notes" value={q.notes} onChange={(e) => update(q.id, { notes: e.target.value })} />
+        <textarea placeholder={q.type === "observation" ? "What did you observe?" : "Notes"} value={q.notes} onChange={(e) => update(q.id, { notes: e.target.value })} />
         <textarea placeholder="Evidence" value={q.evidence} onChange={(e) => update(q.id, { evidence: e.target.value })} />
         <textarea placeholder="Action" value={q.action} onChange={(e) => update(q.id, { action: e.target.value })} />
       </div>

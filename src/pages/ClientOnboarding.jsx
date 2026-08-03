@@ -1,15 +1,21 @@
 import { useState } from "react";
+import { industryOptions, capabilityOptions, regulatoryOptions } from "../data/moduleLibrary.js";
 
 export default function ClientOnboarding({ data, setData, setPage, setSelectedClient, setCalendarAnchor, onClose }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     name: "", industry: "", size: "", turnover: "", website: "", address: "",
+    profileIndustry: "Other", capabilities: [], regulations: [],
     contactName: "", contactRole: "Managing Director", email: "", phone: "",
     tags: "", notes: "", scheduleConsultation: true,
     consultationDate: "2026-07-08", consultationStart: "09:00", consultationEnd: "10:00",
     consultationType: "First Consultation", consultant: "Carl Kirby", location: ""
   });
   const update = (k, v) => setForm({ ...form, [k]: v });
+  const toggleInList = (key, value) => {
+    const list = form[key];
+    update(key, list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  };
 
   function save() {
     if (!form.name.trim()) { alert("Please enter a company name."); setStep(1); return; }
@@ -19,6 +25,7 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
       turnover: form.turnover, website: form.website, address: form.address, score: 0, previous: 0,
       health: "New", status: "Prospect", tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       notes: form.notes,
+      profile: { industry: form.profileIndustry, capabilities: form.capabilities, regulations: form.regulations },
       contacts: [{ id: "p" + Date.now(), name: form.contactName, role: form.contactRole, email: form.email, phone: form.phone, primary: true }],
       timeline: [{ id: "t" + Date.now(), date: new Date().toISOString().slice(0, 10), type: "Client", title: "Client created" }]
     };
@@ -37,16 +44,18 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
     }
   }
 
+  const totalSteps = 5;
+
   return (
     <div className="card onboarding-card">
-      <div className="wizard-head"><div><h2>Add Client and Book First Consultation</h2><p>Step {step} of 4</p></div><button className="secondary" onClick={onClose}>Close</button></div>
-      <div className="wizard-progress"><span style={{ width: `${step * 25}%` }} /></div>
+      <div className="wizard-head"><div><h2>Add Client and Book First Consultation</h2><p>Step {step} of {totalSteps}</p></div><button className="secondary" onClick={onClose}>Close</button></div>
+      <div className="wizard-progress"><span style={{ width: `${(step / totalSteps) * 100}%` }} /></div>
       {step === 1 && (
         <div>
           <h3>Company Details</h3>
           <div className="form-grid">
             <input placeholder="Company name" value={form.name} onChange={(e) => update("name", e.target.value)} />
-            <input placeholder="Industry" value={form.industry} onChange={(e) => update("industry", e.target.value)} />
+            <input placeholder="Industry (display label)" value={form.industry} onChange={(e) => update("industry", e.target.value)} />
             <input placeholder="Company size" value={form.size} onChange={(e) => update("size", e.target.value)} />
             <input placeholder="Turnover" value={form.turnover} onChange={(e) => update("turnover", e.target.value)} />
             <input placeholder="Website" value={form.website} onChange={(e) => update("website", e.target.value)} />
@@ -55,6 +64,35 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
         </div>
       )}
       {step === 2 && (
+        <div>
+          <h3>Business Profile</h3>
+          <p className="muted">This determines which assessment modules apply — the client only sees questions relevant to how their business actually operates.</p>
+          <label>Primary Industry Module
+            <select value={form.profileIndustry} onChange={(e) => update("profileIndustry", e.target.value)}>
+              {industryOptions.map((i) => <option key={i}>{i}</option>)}
+            </select>
+          </label>
+          <h4 className="profile-subhead">Capabilities</h4>
+          <div className="checklist">
+            {capabilityOptions.map((cap) => (
+              <label className="check-row" key={cap}>
+                <input type="checkbox" checked={form.capabilities.includes(cap)} onChange={() => toggleInList("capabilities", cap)} />
+                {cap}
+              </label>
+            ))}
+          </div>
+          <h4 className="profile-subhead">Regulatory Frameworks</h4>
+          <div className="checklist">
+            {regulatoryOptions.map((reg) => (
+              <label className="check-row" key={reg}>
+                <input type="checkbox" checked={form.regulations.includes(reg)} onChange={() => toggleInList("regulations", reg)} />
+                {reg}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+      {step === 3 && (
         <div>
           <h3>Primary Contact</h3>
           <div className="form-grid">
@@ -65,14 +103,14 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
           </div>
         </div>
       )}
-      {step === 3 && (
+      {step === 4 && (
         <div>
           <h3>Client Notes and Tags</h3>
           <input placeholder="Tags separated by commas" value={form.tags} onChange={(e) => update("tags", e.target.value)} />
           <textarea placeholder="Initial notes" value={form.notes} onChange={(e) => update("notes", e.target.value)} />
         </div>
       )}
-      {step === 4 && (
+      {step === 5 && (
         <div>
           <h3>First Consultation</h3>
           <label className="check-row">
@@ -100,7 +138,7 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
       )}
       <div className="wizard-actions">
         <button className="secondary" disabled={step === 1} onClick={() => setStep(step - 1)}>Back</button>
-        {step < 4 ? <button className="primary" onClick={() => setStep(step + 1)}>Next</button> : <button className="primary" onClick={save}>Save Client and Continue</button>}
+        {step < totalSteps ? <button className="primary" onClick={() => setStep(step + 1)}>Next</button> : <button className="primary" onClick={save}>Save Client and Continue</button>}
       </div>
     </div>
   );
