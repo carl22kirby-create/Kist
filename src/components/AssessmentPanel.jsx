@@ -44,8 +44,19 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
           )}
         </div>
         <h2>Question {currentQuestion + 1} of {answers.length}</h2>
+        {q.concept && <p className="q-concept">{q.concept}</p>}
         <h3>{q.question}</h3>
         <p className="muted">{q.guidance}</p>
+        {(q.evidenceRequired?.length > 0 || q.observationPoints?.length > 0) && (
+          <div className="q-evidence-box">
+            {q.evidenceRequired?.length > 0 && (
+              <div><b>Expected Evidence</b><span>{q.evidenceRequired.join(", ")}</span></div>
+            )}
+            {q.observationPoints?.length > 0 && (
+              <div><b>Observation Points</b><span>{q.observationPoints.join(", ")}</span></div>
+            )}
+          </div>
+        )}
         <div className="score-buttons">
           {[1, 2, 3, 4, 5].map((score) => (
             <button key={score} className={q.score === score ? "selected" : ""} onClick={() => update(q.id, { score })}>
@@ -53,6 +64,9 @@ export default function AssessmentPanel({ answers, setAnswers, currentQuestion, 
             </button>
           ))}
         </div>
+        {q.score > 0 && q.score < 4 && q.recommendations && (
+          <p className="q-recommendation"><b>Improvement Advice:</b> {q.recommendations}</p>
+        )}
         <div className="q-nav">
           <button className="secondary" disabled={currentQuestion === 0} onClick={() => setCurrentQuestion(currentQuestion - 1)}>Previous Question</button>
           <button className="secondary" disabled={currentQuestion === answers.length - 1} onClick={() => setCurrentQuestion(currentQuestion + 1)}>Next Question</button>

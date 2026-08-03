@@ -95,3 +95,24 @@
 .profile-editor{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
 .profile-editor label{display:grid;gap:6px;color:var(--muted);margin-bottom:12px}
 .assessment-subhead{font-size:12px;margin:-8px 0 16px}
+
+/* --- Dependencies: business characteristic questions and exclusions --- */
+.dependency-list{display:grid;gap:10px;margin-top:10px}
+.dependency-row{display:flex;justify-content:space-between;align-items:center;gap:14px;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:10px;padding:12px}
+.dependency-row span{color:white;font-size:14px}
+.dependency-buttons{display:flex;gap:6px;flex-shrink:0}
+.dependency-buttons button{border:1px solid var(--line);background:transparent;color:var(--muted);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700}
+.dep-yes.selected{background:rgba(104,216,87,.18);color:var(--green);border-color:rgba(104,216,87,.5)}
+.dep-no.selected{background:rgba(255,92,92,.18);color:#ff8a8a;border-color:rgba(255,92,92,.5)}
+.dep-unknown.selected{background:rgba(255,255,255,.1);color:white}
+.exclusion-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+.exclusion-chip{font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;background:rgba(255,92,92,.12);color:#ff8a8a;border:1px solid rgba(255,92,92,.35)}
+
+/* --- Assessment Item enrichment: concept label, evidence box, recommendations --- */
+.q-concept{color:var(--gold);font-size:12px;text-transform:uppercase;letter-spacing:.6px;font-weight:800;margin:0 0 4px}
+.q-evidence-box{display:grid;gap:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:10px;padding:12px;margin:14px 0}
+.q-evidence-box div{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.q-evidence-box b{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.q-evidence-box span{color:white;font-size:13px}
+.q-recommendation{background:rgba(246,196,0,.08);border:1px solid rgba(246,196,0,.3);border-radius:10px;padding:12px;color:white;font-size:13px;margin:14px 0}
+.q-recommendation b{color:var(--gold)}

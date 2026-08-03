@@ -1,253 +1,157 @@
-// Module Library — Layers 2 through 5 of the KIST assessment engine.
+// Concept Library — the Business Knowledge Engine.
 //
-// Layer 1 (Universal) lives in seedData.js as the original 250 questions and
-// always applies to every client, unchanged.
+// Every entry here is one Assessment Item: a self-contained unit of
+// business knowledge (a "concept") that can appear in any assessment whose
+// tags match it. There is no such thing as "the Logistics module" as a
+// fixed set of content — a module is just a saved combination of tags.
+// One concept (e.g. Stock Accuracy) can carry tags spanning industries,
+// capabilities and regulatory frameworks at once, and is authored exactly
+// once no matter how many of those it's relevant to.
 //
-// Everything here is additional: only included in a given client's
-// assessment if their Business Profile matches the module's tag. A question
-// can carry more than one tag (e.g. "Fleet Management" appears both as part
-// of the Logistics industry module and as a standalone capability, since a
-// non-logistics business — a utilities company, for instance — can also
-// have a fleet).
+// This intentionally starts as a modest, genuine set of concepts (not
+// thousands) — the point of this pass is the engine and the schema, not
+// content volume. Growing the library later is purely a content exercise:
+// add an object to conceptLibrary with the right tags, nothing else in the
+// codebase needs to change.
 //
-// Each entry still maps to one of the 11 universal KIST categories so it
-// rolls into the same KIST Business DNA scoring and radar chart as every
-// other question — modules change WHICH questions a client sees, not how
-// the resulting score is structured.
-//
-// These starter modules are intentionally lean (a handful of genuine,
-// evidence-based questions each) rather than exhaustive. The engine is
-// built to make expanding any one of them later a content change only, not
-// a structural one.
+// Assessment Item shape:
+//   concept            short business-concept label, e.g. "Stock Accuracy"
+//   question           the open, evidence-seeking question itself
+//   category           which of the 11 KIST DNA categories this rolls into
+//   type               "question" (asked to the client) or "observation"
+//                       (scored by the consultant directly)
+//   tags               flat array of tags — industries, capabilities,
+//                       regulatory frameworks, or anything else. No prefixes.
+//   evidenceRequired    array of concrete evidence examples that should
+//                       support a score, e.g. ["Stock reports","Cycle count"]
+//   observationPoints   array of things a consultant should physically look
+//                       for during a visit, where relevant (can be empty)
+//   scoringGuidance     how to interpret a 0-5 score for this concept
+//   recommendations     improvement advice, generally framed for a low score
 
-function mod(category, tag, items, { observation = false, evidenceType } = {}) {
-  return items.map((q) => ({
+function item(concept, question, category, tags, extra = {}) {
+  return {
+    concept,
+    question,
     category,
-    tags: [tag],
-    type: observation ? "observation" : "question",
-    question: q,
-    evidenceType: evidenceType || (observation ? "Observed" : undefined) // undefined = inferred later
-  }));
+    tags,
+    type: extra.observation ? "observation" : "question",
+    evidenceRequired: extra.evidenceRequired || [],
+    observationPoints: extra.observationPoints || [],
+    scoringGuidance: extra.scoringGuidance ||
+      "0-1: no evidence or ad hoc. 2-3: exists but inconsistent or undocumented. 4: consistent and evidenced. 5: consistent, evidenced and actively improved.",
+    recommendations: extra.recommendations ||
+      "Where scored below 4, agree a named owner and a specific next step with a review date, rather than a general intention to improve."
+  };
 }
 
-// --- Layer 2: Industry Modules ---
-const industryModules = [
-  ...mod("Operations and Process", "Industry:Logistics", [
-    "Walk me through how a shipment is tracked from the moment it's booked to the moment it's delivered.",
-    "What evidence shows warehouse pick accuracy is measured, and what happens when it falls short?",
-    "Describe how a missed delivery window is identified and communicated before the customer has to ask.",
-    "How is fleet utilisation tracked, and what's been done recently to improve it?",
-    "What happens when a customs or cross border compliance requirement isn't met on time?"
-  ]),
-  ...mod("Operations and Process", "Industry:Manufacturing", [
-    "Walk me through how a production run is planned and what happens when it falls behind schedule.",
-    "What evidence shows preventative maintenance is actually carried out on schedule, not just planned?",
-    "Describe how a quality defect discovered on the line gets traced back to its root cause.",
-    "How is raw material or component inventory managed to avoid both shortages and excess stock?",
-    "What happens when a machine breakdown threatens a customer delivery date?"
-  ]),
-  ...mod("Customer Experience", "Industry:Retail", [
-    "Describe how consistent the in store experience is across different staff, shifts or locations.",
-    "What evidence shows stock availability on the shelf matches what the system says should be there?",
-    "How is visual merchandising decided, and how is its impact on sales actually measured?",
-    "Walk me through what happens when a customer wants to return or exchange an item.",
-    "What happens during peak trading periods when footfall exceeds normal staffing levels?"
-  ]),
-  ...mod("Customer Experience", "Industry:Hospitality", [
-    "Walk me through what happens between a booking being made and the guest actually arriving.",
-    "What evidence shows food safety standards are followed consistently during service, not just at inspection?",
-    "Describe how a below par guest experience is identified and recovered while the guest is still present.",
-    "How is kitchen and front of house communication managed during a busy service?",
-    "What happens when a guest's specific dietary or accessibility need isn't caught before they arrive?"
-  ]),
-  ...mod("Sales and Marketing", "Industry:Professional Services", [
-    "Walk me through how a new client engagement is scoped and agreed before work begins.",
-    "What evidence shows client work is delivered consistently regardless of which team member handles it?",
-    "Describe how knowledge and expertise is captured so it isn't lost when a senior person leaves.",
-    "How is client satisfaction tracked across the life of an engagement, not just at the end?",
-    "What happens when a client engagement runs over scope or budget partway through?"
-  ])
+export const conceptLibrary = [
+  item("Stock Accuracy", "How is stock accuracy measured, and what's the current variance between system and physical counts?",
+    "Operations and Process", ["Warehouse", "Retail", "Manufacturing", "Logistics", "Distribution", "ISO 9001", "Operations", "Inventory"],
+    { evidenceRequired: ["Stock reports", "Cycle count records", "WMS or inventory system data"],
+      observationPoints: ["Warehouse organisation", "Labelling", "Storage condition"],
+      recommendations: "If variance isn't tracked, start with a monthly cycle count on highest value lines before attempting a full count." }),
+
+  item("Preventative Maintenance", "Describe your preventative maintenance programme and how compliance with it is verified.",
+    "Operations and Process", ["Manufacturing", "Engineering", "Facilities", "Utilities", "Fleet Management", "ISO 45001", "Operations"],
+    { evidenceRequired: ["Maintenance schedule", "Completed maintenance logs", "Breakdown history"],
+      observationPoints: ["Equipment condition", "Visible maintenance records at point of use"],
+      recommendations: "Compare scheduled versus completed maintenance over the last quarter — a gap there is the first thing to close." }),
+
+  item("Customer Complaints", "What changes have been implemented because of customer complaints during the last 12 months?",
+    "Customer Experience", ["Retail", "Hospitality", "Professional Services", "Customer Support", "Call Centre", "ISO 9001", "Customer Experience"],
+    { evidenceRequired: ["Complaint log", "Root cause analysis", "Evidence of a resulting change"],
+      recommendations: "A complaint log that never produces a documented change is a record keeping exercise, not a feedback loop — look for at least one traceable example." }),
+
+  item("Leadership Communication", "Describe how leadership decisions get communicated down through the business, using a recent example.",
+    "Leadership and Accountability", ["Leadership", "Culture", "Communication"],
+    { evidenceRequired: ["Team briefing notes", "Internal communications", "Staff confirmation of understanding"],
+      recommendations: "If communication is verbal only, ask how leadership would know whether the message actually landed with frontline staff." }),
+
+  item("Website Credibility", "How effectively does the website communicate what this business offers, build trust and convert visitors into enquiries?",
+    "Sales and Marketing", ["Sales Team", "Ecommerce", "Visual Presentation", "Professionalism"],
+    { observation: true,
+      evidenceRequired: ["Website analytics", "Conversion rate data"],
+      observationPoints: ["Professional appearance", "Loading speed", "Mobile responsiveness", "Clarity of what the business offers", "Ease of enquiry or purchase"],
+      recommendations: "If there's no analytics data at all, that itself is the finding — a website with no measurement can't be improved with evidence, only guesswork." }),
+
+  item("Cash Flow Forecasting", "Describe how cash flow is forecast, and how far ahead that forecast typically looks.",
+    "Finance and Commercial Control", ["Finance", "Commercial Performance", "Risk"],
+    { evidenceRequired: ["Cash flow forecast document", "Forecast versus actual comparison"],
+      recommendations: "A forecast that's never compared against what actually happened isn't being used to manage the business, just produced for its own sake." }),
+
+  item("Supplier Performance", "How is supplier reliability measured and what happens when a supplier underperforms?",
+    "Finance and Commercial Control", ["Procurement", "Manufacturing", "Logistics", "Distribution", "ISO 9001", "Supplier Management"],
+    { evidenceRequired: ["Supplier scorecards", "Delivery performance data", "Escalation records"],
+      recommendations: "Where no formal scorecard exists, start by tracking on time and in full delivery rate for the three suppliers with the highest business impact." }),
+
+  item("Recruitment", "What evidence exists that recruitment brings in the right people rather than just available people?",
+    "People and Capability", ["People", "Culture", "Remote Workforce"],
+    { evidenceRequired: ["Recruitment process documentation", "New starter retention data", "Probation pass rate"],
+      recommendations: "Probation pass rate and 12 month retention are the two simplest signals that recruitment decisions are actually working." }),
+
+  item("Training Effectiveness", "What evidence shows that training actually improves performance rather than simply being delivered?",
+    "People and Capability", ["People", "Training", "Culture"],
+    { evidenceRequired: ["Training records", "Before and after performance data", "Manager feedback"],
+      recommendations: "If training completion is tracked but performance impact isn't, that's the gap — pick one recent training and trace its effect on a real metric." }),
+
+  item("Sales Conversion", "How is the sales pipeline tracked, and how confident are you in the numbers in it right now?",
+    "Sales and Marketing", ["Sales Team", "Ecommerce", "Commercial Performance", "Data"],
+    { evidenceRequired: ["CRM or pipeline data", "Conversion rate by stage"],
+      recommendations: "If pipeline confidence is low, the most common cause is stale entries that were never removed after a deal was lost — a quick audit usually reveals this fast." }),
+
+  item("Environmental Sustainability", "How are environmental objectives set, tracked and reviewed across the business?",
+    "Risk Compliance and Resilience", ["ISO 14001", "Environmental Compliance", "Manufacturing", "Logistics", "Risk"],
+    { evidenceRequired: ["Environmental policy", "Objective tracking data", "Waste or emissions records"],
+      recommendations: "A policy with no tracked objective behind it is a document, not a programme — ask for one measurable target currently being tracked." }),
+
+  item("Fleet Utilisation", "How is vehicle utilisation and downtime tracked across the fleet?",
+    "Operations and Process", ["Fleet Management", "Logistics", "Transport Planning"],
+    { evidenceRequired: ["Vehicle tracking data", "Utilisation reports", "Maintenance downtime records"],
+      observationPoints: ["Vehicle presentation and condition"],
+      recommendations: "Where utilisation isn't tracked at all, downtime is usually far higher than assumed — even a basic weekly log will surface this quickly." }),
+
+  item("Warehouse Organisation", "How is warehouse layout reviewed for efficiency rather than left as it's always been?",
+    "Operations and Process", ["Warehouse", "Logistics", "Distribution", "Manufacturing"],
+    { observation: true,
+      observationPoints: ["Warehouse organisation", "Labelling", "Storage", "Pick path efficiency", "Housekeeping and safety"],
+      recommendations: "Walk the pick path for the top five moving lines — the layout usually reveals itself as fine or clearly wrong within that single walk." }),
+
+  item("Food Safety Practice", "What evidence shows food safety standards are followed consistently during service, not just at inspection?",
+    "Risk Compliance and Resilience", ["Hospitality", "Food Hygiene", "Kitchen Operations"],
+    { evidenceRequired: ["Temperature logs", "Cleaning schedules", "Staff training records"],
+      observationPoints: ["Kitchen cleanliness and organisation during live service"],
+      recommendations: "Ask to see today's temperature log, not last month's — consistency is proven by what's happening right now, not what's on file." }),
+
+  item("Guest Experience Recovery", "Describe how a below par guest experience is identified and recovered while the guest is still present.",
+    "Customer Experience", ["Hospitality", "Reservations", "Guest Experience"],
+    { evidenceRequired: ["Service recovery examples", "Staff empowerment policy"],
+      recommendations: "If recovery always requires manager approval, response time to unhappy guests is being slowed by process — consider what frontline staff can resolve unassisted." })
 ];
-
-// --- Layer 3: Capability Modules ---
-// These apply based on what the business actually does, independent of
-// industry — a construction firm and a utilities company can both have a
-// fleet and field engineers despite being in different industries.
-const capabilityModules = [
-  ...mod("Operations and Process", "Capability:Warehouse Operations", [
-    "How is stock accuracy measured, and what's the current variance between system and physical counts?",
-    "Describe what happens when a pick or pack error reaches a customer.",
-    "What evidence shows warehouse layout is reviewed for efficiency rather than left as it's always been?"
-  ]),
-  ...mod("Operations and Process", "Capability:Fleet Management", [
-    "How is vehicle utilisation and downtime tracked across the fleet?",
-    "Describe how driver behaviour and vehicle condition are monitored day to day.",
-    "What happens when a vehicle fails a safety or compliance check?"
-  ]),
-  ...mod("Operations and Process", "Capability:Field Service", [
-    "Walk me through how a field engineer's job is scheduled, communicated and confirmed with the customer.",
-    "What evidence shows first time fix rate is tracked, and what's driving it up or down?",
-    "How is a field engineer supported when they encounter something outside their expertise on site?"
-  ]),
-  ...mod("Operations and Process", "Capability:Manufacturing", [
-    "Describe how production efficiency is measured beyond simply hitting output targets.",
-    "What happens when a quality issue is traced back to a specific shift, machine or supplier?",
-    "How is planned versus actual production reviewed, and what changes as a result?"
-  ]),
-  ...mod("Customer Experience", "Capability:Customer Support", [
-    "What evidence shows customer support response times are measured against a defined standard?",
-    "Describe what happens when a support case can't be resolved by the first person who picks it up.",
-    "How is customer sentiment tracked across support interactions, not just resolution rate?"
-  ]),
-  ...mod("Customer Experience", "Capability:Call Centre", [
-    "How is call quality monitored, and what happens as a result of a call scoring poorly?",
-    "What evidence shows average wait time is tracked and actively managed, not just recorded?",
-    "Describe how a call handler is supported when a customer becomes difficult or distressed."
-  ]),
-  ...mod("Sales and Marketing", "Capability:Sales Team", [
-    "How is individual and team sales performance reviewed, and what happens when someone consistently underperforms?",
-    "What evidence shows the sales team follows a consistent process rather than everyone selling their own way?",
-    "Describe how sales forecasts are built and how accurate they've been recently."
-  ]),
-  ...mod("Operations and Process", "Capability:Project Delivery", [
-    "Walk me through how a project's scope, budget and timeline are tracked once work is underway.",
-    "What happens when a project is at risk of running over budget or past deadline?",
-    "How is a completed project reviewed to capture what would be done differently next time?"
-  ]),
-  ...mod("Finance and Commercial Control", "Capability:Procurement", [
-    "How are suppliers selected and reviewed, beyond simply choosing the lowest price?",
-    "What evidence shows procurement spend is tracked against budget in real time?",
-    "Describe what happens when a critical supplier's pricing or terms change unexpectedly."
-  ]),
-  ...mod("Risk Compliance and Resilience", "Capability:Exporting", [
-    "How is export documentation and customs compliance managed for each shipment?",
-    "What happens when a destination country's import requirements change?",
-    "Describe how currency and payment risk is managed on international sales."
-  ]),
-  ...mod("Risk Compliance and Resilience", "Capability:Importing", [
-    "How is supplier and customs compliance verified before goods are imported?",
-    "What happens when an imported shipment is delayed or held at the border?",
-    "Describe how import cost, including duty and exchange rate movement, is factored into pricing."
-  ]),
-  ...mod("Sales and Marketing", "Capability:Ecommerce", [
-    "How effectively does the online store convert visitors into paying customers, and how is that measured?",
-    "What happens when an online order can't be fulfilled as shown at checkout?",
-    "Describe how cart abandonment is tracked and what's been done to address it."
-  ]),
-  ...mod("Finance and Commercial Control", "Capability:Subscriptions", [
-    "How is subscriber churn measured, and what's driving it currently?",
-    "What happens when a recurring payment fails?",
-    "Describe how subscriber value is tracked over the lifetime of the relationship, not just at signup."
-  ]),
-  ...mod("Operations and Process", "Capability:Franchises", [
-    "How is consistency maintained across franchise locations, and what happens when one falls below standard?",
-    "What evidence shows franchisees are properly supported, not just monitored for compliance?",
-    "Describe how best practice from one location gets shared across the rest of the network."
-  ]),
-  ...mod("Operations and Process", "Capability:Multi Site Operations", [
-    "How is performance compared across sites, and what happens when one consistently underperforms?",
-    "What evidence shows standards are applied consistently across every site, not just the flagship one?",
-    "Describe how a decision made at head office actually gets implemented on the ground at each site."
-  ]),
-  ...mod("People and Capability", "Capability:Remote Workforce", [
-    "How is performance and engagement measured for staff who aren't physically present day to day?",
-    "What evidence shows remote staff have equal access to support, training and career progression?",
-    "Describe how team culture and communication are maintained across a distributed workforce."
-  ])
-];
-
-// --- Layer 4: Regulatory Modules ---
-// Kept at the level of "what evidence proves this is genuinely working",
-// rather than citing specific clause numbers that can change over time —
-// the assessment tests operating reality, not just certificate paperwork.
-const regulatoryModules = [
-  ...mod("Risk Compliance and Resilience", "Regulatory:ISO 9001", [
-    "What evidence shows corrective actions from your most recent internal audit have actually been implemented?",
-    "Describe how nonconformities are identified and tracked through to resolution.",
-    "How is customer satisfaction data actually used to drive documented improvement, not just recorded?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:ISO 14001", [
-    "What evidence shows environmental objectives are actively tracked, not just set once and forgotten?",
-    "Describe how a significant environmental incident would be identified, reported and investigated.",
-    "How is supplier environmental performance assessed as part of your own compliance?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:ISO 27001", [
-    "What evidence shows information security risks are formally assessed and reviewed on a regular basis?",
-    "Describe how an actual or suspected data breach would be identified and escalated.",
-    "How is access to sensitive systems and data reviewed and removed when no longer needed?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:ISO 45001", [
-    "What evidence shows near misses and minor incidents are reported, not just serious accidents?",
-    "Describe how health and safety risk assessments are kept current as the business changes.",
-    "How is worker consultation on health and safety actually carried out, not just documented as a policy?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:CQC", [
-    "What evidence shows care plans are reviewed and updated to reflect a person's current needs?",
-    "Describe how a safeguarding concern would be identified, escalated and followed through.",
-    "How is staff competency verified and kept current for the care being delivered?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:FCA", [
-    "What evidence shows customer outcomes are actively monitored in line with Consumer Duty expectations?",
-    "Describe how a customer complaint involving potential harm would be identified and escalated.",
-    "How is staff training on regulatory requirements verified as effective, not just completed?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:GDPR", [
-    "What evidence shows personal data is only kept for as long as there's a genuine business reason to hold it?",
-    "Describe how the business would respond to a subject access request within the required timeframe.",
-    "How is consent for marketing or data use actually recorded and kept current?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:Food Hygiene", [
-    "What evidence shows temperature control records are checked and acted on, not just filled in?",
-    "Describe what happens when a food safety issue is identified during service.",
-    "How is staff food hygiene training kept current, and how is it verified in practice rather than on paper?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:Construction Design and Management", [
-    "What evidence shows a principal designer's duties are being actively fulfilled on current projects?",
-    "Describe how a site specific risk is identified and communicated before work begins.",
-    "How is subcontractor competency verified before they're allowed on site?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:Environmental Compliance", [
-    "What evidence shows waste is disposed of through properly licensed and verified routes?",
-    "Describe how an environmental permit condition is monitored for ongoing compliance.",
-    "How would an environmental incident, such as a spill or discharge, be identified and reported?"
-  ]),
-  ...mod("Risk Compliance and Resilience", "Regulatory:Medical Device Regulations", [
-    "What evidence shows device traceability is maintained from manufacture through to end use?",
-    "Describe how an adverse event involving a device would be identified, reported and investigated.",
-    "How is post market surveillance actually carried out, rather than assumed to be someone else's responsibility?"
-  ])
-];
-
-// --- Layer 5: Observation Module ---
-// Universal, cross-industry items the consultant scores from direct
-// observation rather than by asking the client — evidence should always
-// outweigh opinion, per the KIST assessment philosophy.
-const observationModule = mod("Customer Experience", "Observation", [
-  "How professional and trustworthy does the website look and feel when viewed as a prospective customer would see it?",
-  "How consistent is branding across the website, signage, vehicles and printed material?",
-  "How professional is staff appearance and presentation on arrival?",
-  "How is the telephone answered, and what tone and professionalism does the greeting set?",
-  "How clean, organised and well presented is the reception or entrance area?",
-  "How clear and professional is signage, both external and internal?",
-  "How well presented and maintained are company vehicles, if any are visible?",
-  "How safe and well organised does the premises appear during a walk through?",
-  "How accessible is the premises for a visitor with additional needs?",
-  "How professional and well organised do meeting rooms or client facing spaces appear?",
-  "How would a customer describe their overall journey through the premises, from arrival to leaving?"
-], { observation: true });
-
-export const moduleLibrary = [...industryModules, ...capabilityModules, ...regulatoryModules, ...observationModule];
 
 // Controlled lists used to drive the Business Profile step in Client
-// Onboarding — these must line up with the tag names used above so matching
-// works, but are kept separate here as the single source of truth for the UI.
+// Onboarding. These are the entry points into the tag space — selecting an
+// industry, capability or regulation just adds that name as an active tag.
 export const industryOptions = ["Logistics", "Manufacturing", "Retail", "Hospitality", "Professional Services", "Other"];
 export const capabilityOptions = [
-  "Warehouse Operations", "Fleet Management", "Field Service", "Manufacturing", "Customer Support",
+  "Warehouse", "Fleet Management", "Field Service", "Manufacturing", "Customer Support",
   "Call Centre", "Sales Team", "Project Delivery", "Procurement", "Exporting", "Importing",
   "Ecommerce", "Subscriptions", "Franchises", "Multi Site Operations", "Remote Workforce"
 ];
 export const regulatoryOptions = [
   "ISO 9001", "ISO 14001", "ISO 27001", "ISO 45001", "CQC", "FCA", "GDPR",
   "Food Hygiene", "Construction Design and Management", "Environmental Compliance", "Medical Device Regulations"
+];
+
+// Dependencies — the piece that lets the assessment shrink as more is known
+// about the business, rather than only ever growing from manual checkbox
+// selection. Each rule says: when this Business Profile answer is given,
+// hard-exclude every item carrying the listed tag(s) — regardless of any
+// other tag that item also carries. A "no warehouse" answer removes every
+// warehouse-tagged item completely, even one that's also tagged Retail.
+export const dependencyQuestions = [
+  { field: "hasWarehouse", label: "Does the business operate a warehouse?", excludeTagsWhenFalse: ["Warehouse"] },
+  { field: "operatesOwnTransport", label: "Does the business operate its own transport or fleet, rather than outsourcing it?", excludeTagsWhenFalse: ["Fleet Management"] },
+  { field: "manufactures", label: "Does the business manufacture or produce physical goods?", excludeTagsWhenFalse: ["Manufacturing"] },
+  { field: "sellsOnline", label: "Does the business sell or take bookings online?", excludeTagsWhenFalse: ["Ecommerce"] }
 ];

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { industryOptions, capabilityOptions, regulatoryOptions } from "../data/moduleLibrary.js";
+import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/moduleLibrary.js";
 
 export default function ClientOnboarding({ data, setData, setPage, setSelectedClient, setCalendarAnchor, onClose }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     name: "", industry: "", size: "", turnover: "", website: "", address: "",
     profileIndustry: "Other", capabilities: [], regulations: [],
+    dependencies: Object.fromEntries(dependencyQuestions.map((d) => [d.field, null])),
     contactName: "", contactRole: "Managing Director", email: "", phone: "",
     tags: "", notes: "", scheduleConsultation: true,
     consultationDate: "2026-07-08", consultationStart: "09:00", consultationEnd: "10:00",
@@ -16,6 +17,7 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
     const list = form[key];
     update(key, list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
+  const setDependency = (field, value) => update("dependencies", { ...form.dependencies, [field]: value });
 
   function save() {
     if (!form.name.trim()) { alert("Please enter a company name."); setStep(1); return; }
@@ -25,7 +27,7 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
       turnover: form.turnover, website: form.website, address: form.address, score: 0, previous: 0,
       health: "New", status: "Prospect", tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       notes: form.notes,
-      profile: { industry: form.profileIndustry, capabilities: form.capabilities, regulations: form.regulations },
+      profile: { industry: form.profileIndustry, capabilities: form.capabilities, regulations: form.regulations, dependencies: form.dependencies },
       contacts: [{ id: "p" + Date.now(), name: form.contactName, role: form.contactRole, email: form.email, phone: form.phone, primary: true }],
       timeline: [{ id: "t" + Date.now(), date: new Date().toISOString().slice(0, 10), type: "Client", title: "Client created" }]
     };
@@ -88,6 +90,20 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
                 <input type="checkbox" checked={form.regulations.includes(reg)} onChange={() => toggleInList("regulations", reg)} />
                 {reg}
               </label>
+            ))}
+          </div>
+          <h4 className="profile-subhead">Business Characteristics</h4>
+          <p className="muted">Answering these shrinks the assessment automatically — a "No" here hard removes every related question, even if a capability above suggests otherwise.</p>
+          <div className="dependency-list">
+            {dependencyQuestions.map((dep) => (
+              <div className="dependency-row" key={dep.field}>
+                <span>{dep.label}</span>
+                <div className="dependency-buttons">
+                  <button type="button" className={form.dependencies[dep.field] === true ? "dep-yes selected" : "dep-yes"} onClick={() => setDependency(dep.field, true)}>Yes</button>
+                  <button type="button" className={form.dependencies[dep.field] === false ? "dep-no selected" : "dep-no"} onClick={() => setDependency(dep.field, false)}>No</button>
+                  <button type="button" className={form.dependencies[dep.field] === null ? "dep-unknown selected" : "dep-unknown"} onClick={() => setDependency(dep.field, null)}>Not Yet Known</button>
+                </div>
+              </div>
             ))}
           </div>
         </div>

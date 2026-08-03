@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { Tag, Mail, Phone, Layers } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
-import { industryOptions, capabilityOptions, regulatoryOptions } from "../data/moduleLibrary.js";
-import { activeModulesForProfile } from "../utils/assessmentEngine.js";
+import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/moduleLibrary.js";
+import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
 
 export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const [showBooking, setShowBooking] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [booking, setBooking] = useState({ date: "2026-07-08", start: "09:00", end: "10:00", type: "First Consultation", consultant: "Carl Kirby", location: client.address || "" });
-  const profile = client.profile || { industry: "Other", capabilities: [], regulations: [] };
+  const profile = client.profile || { industry: "Other", capabilities: [], regulations: [], dependencies: {} };
   const activeModules = activeModulesForProfile(profile);
+  const activeExclusions = activeExclusionsForProfile(profile);
 
   function updateProfile(next) {
     setData({ ...data, clients: data.clients.map((c) => c.id === client.id ? { ...c, profile: next } : c) });
@@ -18,6 +19,9 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   function toggleInProfile(key, value) {
     const list = profile[key] || [];
     updateProfile({ ...profile, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] });
+  }
+  function setDependency(field, value) {
+    updateProfile({ ...profile, dependencies: { ...(profile.dependencies || {}), [field]: value } });
   }
 
   function book() {
@@ -75,6 +79,11 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
           <div className="module-chip-row">
             {activeModules.map((m) => <span className={`module-chip module-chip-${m.type.toLowerCase().replace(/\s+/g, "-")}`} key={m.type + m.name}>{m.name}</span>)}
           </div>
+          {activeExclusions.length > 0 && (
+            <div className="exclusion-row">
+              {activeExclusions.map((ex) => <span className="exclusion-chip" key={ex.tag}>Excluded: {ex.tag}</span>)}
+            </div>
+          )}
           <button className="secondary" onClick={() => setShowProfile(!showProfile)}>{showProfile ? "Hide" : "Edit"} Business Profile</button>
           {showProfile && (
             <div className="profile-editor">
@@ -100,6 +109,23 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
                     {reg}
                   </label>
                 ))}
+              </div>
+              <h4 className="profile-subhead">Business Characteristics</h4>
+              <p className="muted">A "No" here hard removes every related question, even if a capability above suggests otherwise.</p>
+              <div className="dependency-list">
+                {dependencyQuestions.map((dep) => {
+                  const current = (profile.dependencies || {})[dep.field];
+                  return (
+                    <div className="dependency-row" key={dep.field}>
+                      <span>{dep.label}</span>
+                      <div className="dependency-buttons">
+                        <button type="button" className={current === true ? "dep-yes selected" : "dep-yes"} onClick={() => setDependency(dep.field, true)}>Yes</button>
+                        <button type="button" className={current === false ? "dep-no selected" : "dep-no"} onClick={() => setDependency(dep.field, false)}>No</button>
+                        <button type="button" className={current == null ? "dep-unknown selected" : "dep-unknown"} onClick={() => setDependency(dep.field, null)}>Not Yet Known</button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

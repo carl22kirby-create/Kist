@@ -73,29 +73,42 @@ Same checklist as before, worth actually running through once deployed:
 5. Open the site in a private/incognito window — should ask you to log in
    again separately.
 
-## Dynamic Assessment Engine (v4.3.0)
+## Business Knowledge Engine (v5.0.0)
 
-The 250-question assessment is now the Universal layer only. Each client also
-has a Business Profile (industry, capabilities, regulatory frameworks) set
-in Client Onboarding or edited later on the Client page. The actual
-assessment a consultant sees is assembled live from:
+This replaces the fixed industry/capability/regulatory module arrays from
+v4.3 with a single flat, tagged concept library. There's no such thing as
+"the Logistics module" as a block of content anymore — a module is just a
+saved combination of tags, and any concept can carry tags across as many
+industries, capabilities and regulations as genuinely apply to it. One
+concept (Stock Accuracy, say) is authored once and appears everywhere it's
+tagged, rather than being duplicated per industry.
 
-- **Universal** (250 questions) — always included
-- **Industry module** — one, based on the client's primary industry
-- **Capability modules** — any that apply (fleet, warehouse, ecommerce, etc.)
-- **Regulatory modules** — any that apply (ISO 9001, GDPR, etc.)
-- **Observation module** — always included, scored by the consultant directly
+Every item in the library is now an **Assessment Item**:
+`concept`, `question`, `category` (still rolls into the 11 KIST DNA
+dimensions), `tags`, `evidenceRequired`, `observationPoints`,
+`scoringGuidance`, `recommendations`. See `src/data/moduleLibrary.js` for
+the concept library itself.
 
-This is already live on the real database — I added a `profile` JSONB
-column to `clients` and updated `get_full_data`/`replace_full_data` to carry
-it, and tested the round trip directly against the project before writing
-any app code. If you ever rebuild this schema from scratch, the migration
-files in `supabase/migrations/` are in order and include this change.
+**Dependencies** are the new piece: a Business Profile now also captures a
+small set of yes/no business characteristics (does this business have a
+warehouse, operate its own transport, manufacture, sell online). Answering
+"No" to one of these **hard-excludes** every item carrying the related tag
+— even if another tag on that same item would otherwise include it. This is
+what makes the assessment genuinely shrink as more is learned about a
+business, rather than only ever growing from manual tag selection. See
+`dependencyQuestions` in `moduleLibrary.js` and `activeExclusionsForProfile`
+in `assessmentEngine.js`.
 
-The starter modules (5 industries, 16 capabilities, 11 regulatory
-frameworks) are intentionally lean — a handful of genuine questions each,
-not padded for volume. Expanding any one of them is a content change in
-`src/data/moduleLibrary.js` only; the engine itself doesn't need touching.
+I verified this behaviour directly before shipping it: with a client tagged
+both Retail and Warehouse, answering "No warehouse" removes Stock Accuracy
+entirely, even though the Retail tag alone would still match it — confirmed
+with an automated test, not just visual inspection.
+
+**Content scope, deliberately**: this pass starts with 15 concepts, not
+thousands. The engine and schema are what took the real work; growing the
+library is now a pure content exercise — add an object to
+`conceptLibrary` with the right tags and it's live everywhere those tags
+apply, no other code changes needed.
 
 ## Architecture
 
