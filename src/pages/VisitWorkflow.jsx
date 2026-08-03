@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import PageHeader from "../components/PageHeader.jsx";
 import AssessmentPanel from "../components/AssessmentPanel.jsx";
-import { ReportPreview, PresentationMode } from "../components/ReportComponents.jsx";
+import { PresentationMode } from "../components/ReportComponents.jsx";
 import { visitStages } from "../data/seedData.js";
 import { calculateOverall, getClientAssessment, setClientAssessment } from "../utils/scoring.js";
 
-export default function VisitWorkflow({ data, setData, selectedClient, setSelectedClient }) {
+export default function VisitWorkflow({ data, setData, selectedClient, setSelectedClient, setPage }) {
   const [stage, setStage] = useState(0);
   const [clientId, setClientId] = useState(selectedClient || data.clients[0]?.id || "");
   const [attendees, setAttendees] = useState(["Managing Director"]);
@@ -45,7 +45,13 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
           {stage === 2 && <Walkthrough notes={notes} setNotes={setNotes} />}
           {stage === 3 && <AssessmentPanel answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />}
           {stage === 4 && <textarea placeholder="Evidence review notes" value={notes.evidence || ""} onChange={(e) => setNotes({ ...notes, evidence: e.target.value })} />}
-          {stage === 5 && <ReportPreview client={client} score={calculateOverall(answers)} />}
+          {stage === 5 && (
+            <div>
+              <p className="muted">Overall score so far: <strong className="gold">{calculateOverall(answers)}/100</strong></p>
+              <p className="muted">The full report pulls live from this assessment's category scores, notes and actions, formatted for the client.</p>
+              <button className="primary" onClick={() => setPage && setPage("report")}>Open Full Report</button>
+            </div>
+          )}
           {stage === 6 && <PresentationMode client={client} score={calculateOverall(answers)} answers={answers} />}
           {stage === 7 && <textarea placeholder="90 day action plan" value={notes.plan || ""} onChange={(e) => setNotes({ ...notes, plan: e.target.value })} />}
           {stage === 8 && <textarea placeholder="Follow up schedule notes" value={notes.followup || ""} onChange={(e) => setNotes({ ...notes, followup: e.target.value })} />}

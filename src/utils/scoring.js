@@ -32,3 +32,26 @@ export function setClientAssessment(data, setData, clientId, nextAnswers) {
     assessments: { ...(data.assessments || {}), [clientId]: nextAnswers }
   });
 }
+
+// Highest-scoring categories that have actually been assessed (answered > 0),
+// for the report's "strengths" section. Categories with no answers yet are
+// excluded rather than shown as a false "0" weakness.
+export function topCategories(catScores, n = 3) {
+  return catScores.filter((c) => c.answered > 0).sort((a, b) => b.score - a.score).slice(0, n);
+}
+
+export function bottomCategories(catScores, n = 3) {
+  return catScores.filter((c) => c.answered > 0).sort((a, b) => a.score - b.score).slice(0, n);
+}
+
+// Pulls out the specific questions where the consultant actually wrote
+// something (notes, evidence, or a follow-up action) rather than just a
+// bare score, ordered so the lowest-scoring, most consequential entries
+// surface first. This is what makes a report specific to a real assessment
+// rather than generic boilerplate text.
+export function notableAnswers(answers, { maxScore = 3, limit = 8 } = {}) {
+  return answers
+    .filter((q) => q.score > 0 && q.score <= maxScore && (q.notes?.trim() || q.evidence?.trim() || q.action?.trim()))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit);
+}

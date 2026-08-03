@@ -74,6 +74,7 @@ export const featureRegister = [
   "Assessment answers persist per client",
   "Backend API with SQLite database",
   "Dashboard widget preferences synced server-side",
+  "Printable, data-driven client report (PDF export)",
   "Reports retained",
   "Actions retained",
   "Analytics retained",
@@ -94,6 +95,7 @@ export const versionHistory = [
   ["v2.2.0", "Operational build: per-client assessment persistence, calendar-to-visit and reports-to-client navigation, multi-file architecture"],
   ["v2.3.0", "Backend and database release: Node + SQLite API replaces localStorage, dashboard widget prefs synced server-side"],
   ["v3.0.0", "Auth and Postgres release: password login with sessions, SQLite migrated to Postgres, Railway deployment config"],
-  ["v4.0.0", "Vercel and Supabase release: backend rewritten as serverless functions, database logic moved into Postgres RPC functions, deployed to a dedicated Supabase project"]
+  ["v4.0.0", "Vercel and Supabase release: backend rewritten as serverless functions, database logic moved into Postgres RPC functions, deployed to a dedicated Supabase project"],
+  ["v4.1.0", "Client report release: full data-driven printable report per client (KIST Business DNA, category breakdown, key findings pulled from real assessment notes, priority actions, 90 day roadmap), exportable to PDF via browser print"]
 ];
 

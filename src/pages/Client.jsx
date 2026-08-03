@@ -36,7 +36,7 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
           <button className="primary" onClick={() => setShowBooking(!showBooking)}>Schedule Consultation</button><br /><br />
           <button className="secondary" onClick={() => setPage("visits")}>Start Visit Workflow</button><br /><br />
           <button className="secondary" onClick={() => setPage("assessments")}>Start Assessment</button><br /><br />
-          <button className="secondary" onClick={() => setPage("reports")}>Generate Report</button>
+          <button className="secondary" onClick={() => setPage("report")}>View Full Report</button>
         </div>
         <div className="card">
           <h2>Contacts</h2>

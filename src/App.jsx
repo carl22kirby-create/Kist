@@ -14,6 +14,7 @@ import AI from "./pages/AI.jsx";
 import Foundation from "./pages/Foundation.jsx";
 import Versions from "./pages/Versions.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
+import ClientReport from "./pages/ClientReport.jsx";
 import { checkSession, login, logout, fetchData, saveData, resetData as apiResetData } from "./api.js";
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -108,6 +109,10 @@ export default function App() {
   }
 
   const props = { data, setData, page, setPage, selectedClient, setSelectedClient, calendarAnchor, setCalendarAnchor, resetData };
+
+  if (page === "report") {
+    return <ClientReport {...props} />;
+  }
 
   const pages = {
     dashboard: <Dashboard {...props} />,

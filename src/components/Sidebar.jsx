@@ -42,7 +42,7 @@ export default function Sidebar({ page, setPage, saveStatus, onLogout }) {
       ))}
       <button className="logout-button" onClick={onLogout}><LogOut size={17} /> Log Out</button>
       <div className="version">
-        Version 4.0.0<br /><span>Vercel + Supabase release</span>
+        Version 4.1.0<br /><span>Client report release</span>
         {saveStatus && <div className={`sync-status ${saveStatus}`}>{STATUS_LABEL[saveStatus] || ""}</div>}
       </div>
     </aside>
