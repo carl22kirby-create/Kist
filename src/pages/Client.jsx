@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { Tag, Mail, Phone, Layers } from "lucide-react";
+import { Tag, Mail, Phone, Layers, Target, FlaskConical } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
-import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/knowledgeBase.js";
+import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions, businessObjectiveOptions, conceptNames } from "../data/knowledgeBase.js";
 import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
+import { getClientAssessment, reviewHypothesis } from "../utils/scoring.js";
 
 export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const [showBooking, setShowBooking] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showHypothesisEditor, setShowHypothesisEditor] = useState(false);
   const [booking, setBooking] = useState({ date: "2026-07-08", start: "09:00", end: "10:00", type: "First Consultation", consultant: "Carl Kirby", location: client.address || "" });
-  const profile = client.profile || { industry: "Other", capabilities: [], regulations: [], dependencies: {} };
+  const profile = client.profile || { industry: "Other", capabilities: [], regulations: [], dependencies: {}, objectives: [], threeProblems: "", hypothesis: null };
   const activeModules = activeModulesForProfile(profile);
   const activeExclusions = activeExclusionsForProfile(profile);
+  const assessmentAnswers = getClientAssessment(data, client.id);
+  const hypothesisReview = reviewHypothesis(assessmentAnswers, profile.hypothesis);
 
   function updateProfile(next) {
     setData({ ...data, clients: data.clients.map((c) => c.id === client.id ? { ...c, profile: next } : c) });
@@ -22,6 +26,15 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   }
   function setDependency(field, value) {
     updateProfile({ ...profile, dependencies: { ...(profile.dependencies || {}), [field]: value } });
+  }
+  function updateHypothesis(field, value) {
+    const current = profile.hypothesis || { statement: "", targetConcepts: [], formedDate: new Date().toISOString().slice(0, 10) };
+    updateProfile({ ...profile, hypothesis: { ...current, [field]: value } });
+  }
+  function toggleHypothesisTarget(name) {
+    const current = profile.hypothesis || { statement: "", targetConcepts: [], formedDate: new Date().toISOString().slice(0, 10) };
+    const list = current.targetConcepts || [];
+    updateHypothesis("targetConcepts", list.includes(name) ? list.filter((n) => n !== name) : [...list, name]);
   }
 
   function book() {
@@ -47,6 +60,44 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
             <p><strong>Status:</strong> {client.status}</p>
           </div>
           <div className="client-tags">{(client.tags || []).map((t) => <span key={t}><Tag size={12} />{t}</span>)}</div>
+        </div>
+        <div className="card wide objectives-card">
+          <h2><Target size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What This Client Wants to Achieve</h2>
+          <p className="muted">The primary driver of this assessment. The Business Performance Score still matters, but it's evidence supporting these objectives, not the main product.</p>
+          <textarea placeholder="In their own words: if we could only solve three problems, what would success look like?" value={profile.threeProblems || ""} onChange={(e) => updateProfile({ ...profile, threeProblems: e.target.value })} />
+          <div className="checklist">
+            {businessObjectiveOptions.map((obj) => (
+              <label className="check-row" key={obj}>
+                <input type="checkbox" checked={(profile.objectives || []).includes(obj)} onChange={() => toggleInProfile("objectives", obj)} />
+                {obj}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="card wide hypothesis-card">
+          <h2><FlaskConical size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Consultancy Hypothesis</h2>
+          <p className="muted">The working theory of what's actually limiting the objectives above, formed before the evidence is gathered and tested against it as BPIs get scored.</p>
+          {hypothesisReview && (
+            <div className={`hypothesis-status hypothesis-status-${hypothesisReview.status.replace(/\s+/g, "-").toLowerCase()}`}>
+              {hypothesisReview.status}{hypothesisReview.averageScore != null && ` — average score ${hypothesisReview.averageScore}/5 across target BPIs`}
+            </div>
+          )}
+          <button className="secondary" onClick={() => setShowHypothesisEditor(!showHypothesisEditor)}>{showHypothesisEditor ? "Hide" : profile.hypothesis ? "Edit" : "Form"} Hypothesis</button>
+          {!showHypothesisEditor && profile.hypothesis?.statement && <p className="hypothesis-statement">"{profile.hypothesis.statement}"</p>}
+          {showHypothesisEditor && (
+            <div className="profile-editor">
+              <textarea placeholder="Working theory: e.g. 'Growth is limited by weak digital conversion, not capacity.'" value={profile.hypothesis?.statement || ""} onChange={(e) => updateHypothesis("statement", e.target.value)} />
+              <h4 className="profile-subhead">Which BPIs is this hypothesis actually about?</h4>
+              <div className="checklist">
+                {conceptNames.map((name) => (
+                  <label className="check-row" key={name}>
+                    <input type="checkbox" checked={(profile.hypothesis?.targetConcepts || []).includes(name)} onChange={() => toggleHypothesisTarget(name)} />
+                    {name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="card">
           <h2>Quick Actions</h2>

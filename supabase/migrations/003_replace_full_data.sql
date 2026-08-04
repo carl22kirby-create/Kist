@@ -1,11 +1,9 @@
 -- Transactional wipe-and-rewrite of every table from one posted JSON blob.
--- Runs entirely inside Postgres as a single function call, which keeps this
--- atomic without needing a client-side transaction — important for
--- serverless functions, which don't hold a long-lived DB connection open.
 --
 -- Updated 2026-08-03 to include the client "profile" JSONB column
--- (Business Profile: industry, capabilities, regulatory frameworks) added
--- by migration 005. This is the current live version on Supabase.
+-- (migration 005) and the "assessmentRounds" data written to the
+-- assessment_rounds table (migration 006). This is the current live
+-- version on Supabase.
 CREATE OR REPLACE FUNCTION replace_full_data(payload jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -18,6 +16,7 @@ DECLARE
   contact jsonb;
   item jsonb;
   assessment_key text;
+  round_key text;
 BEGIN
   DELETE FROM client_tags;
   DELETE FROM client_contacts;
@@ -27,6 +26,7 @@ BEGIN
   DELETE FROM actions;
   DELETE FROM reports;
   DELETE FROM assessments;
+  DELETE FROM assessment_rounds;
 
   FOR c IN SELECT * FROM jsonb_array_elements(COALESCE(payload->'clients', '[]'::jsonb))
   LOOP
@@ -96,6 +96,13 @@ BEGIN
     FOR assessment_key IN SELECT * FROM jsonb_object_keys(payload->'assessments')
     LOOP
       INSERT INTO assessments (client_id, answers_json) VALUES (assessment_key, payload->'assessments'->assessment_key);
+    END LOOP;
+  END IF;
+
+  IF payload->'assessmentRounds' IS NOT NULL THEN
+    FOR round_key IN SELECT * FROM jsonb_object_keys(payload->'assessmentRounds')
+    LOOP
+      INSERT INTO assessment_rounds (client_id, rounds_json) VALUES (round_key, payload->'assessmentRounds'->round_key);
     END LOOP;
   END IF;
 

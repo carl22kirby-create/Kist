@@ -1,10 +1,10 @@
 -- Reassembles all app data into the single JSON shape the frontend expects,
--- in one round trip instead of a dozen separate queries per request — this
--- matters more in a serverless world where every network hop costs latency.
+-- in one round trip instead of a dozen separate queries per request.
 --
 -- Updated 2026-08-03 to include the client "profile" JSONB column
--- (Business Profile: industry, capabilities, regulatory frameworks) added
--- by migration 005. This is the current live version on Supabase.
+-- (migration 005) and the "assessmentRounds" data from the
+-- assessment_rounds table (migration 006). This is the current live
+-- version on Supabase.
 CREATE OR REPLACE FUNCTION get_full_data()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -54,6 +54,9 @@ BEGIN
     ), '[]'::jsonb),
     'assessments', COALESCE((
       SELECT jsonb_object_agg(a.client_id, a.answers_json) FROM assessments a
+    ), '{}'::jsonb),
+    'assessmentRounds', COALESCE((
+      SELECT jsonb_object_agg(ar.client_id, ar.rounds_json) FROM assessment_rounds ar
     ), '{}'::jsonb),
     'widgets', (SELECT w.settings FROM widget_settings w WHERE w.id = 1)
   ) INTO result;

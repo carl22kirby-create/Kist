@@ -1,7 +1,7 @@
 import BusinessDNA from "../components/BusinessDNA.jsx";
 import {
   getClientAssessment, categoryScores, calculateOverall,
-  topCategories, bottomCategories, notableAnswers
+  topCategories, bottomCategories, notableAnswers, getEscalations, getObjectiveFindings, reviewHypothesis
 } from "../utils/scoring.js";
 
 const today = () => new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
@@ -23,6 +23,12 @@ export default function ClientReport({ data, selectedClient, setPage }) {
   const strengths = topCategories(catScores, 3);
   const improvements = bottomCategories(catScores, 3);
   const findings = notableAnswers(answers, { maxScore: 3, limit: 8 });
+  const escalations = getEscalations(answers);
+  const selectedObjectives = client.profile?.objectives || [];
+  const threeProblems = client.profile?.threeProblems || "";
+  const objectiveFindings = getObjectiveFindings(answers, selectedObjectives, 10);
+  const hypothesis = client.profile?.hypothesis;
+  const hypothesisReview = reviewHypothesis(answers, hypothesis);
 
   const clientActions = data.actions.filter((a) => a.clientId === client.id);
   const priorityOrder = { High: 0, Medium: 1, Low: 2 };
@@ -64,8 +70,86 @@ export default function ClientReport({ data, selectedClient, setPage }) {
           <p className="report-meta">Prepared by {consultant}</p>
         </section>
 
+        {escalations.length > 0 && (
+          <section className="report-section report-escalations report-avoid-break">
+            <h2>Escalations Requiring Immediate Attention</h2>
+            <table className="report-table">
+              <thead><tr><th>Indicator</th><th>Flag</th><th>Notes</th></tr></thead>
+              <tbody>
+                {escalations.map((e) => (
+                  <tr key={e.id}>
+                    <td>{e.concept}</td>
+                    <td className="report-escalation-flags">{e.flags.join(", ")}</td>
+                    <td>{e.notes || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {selectedObjectives.length > 0 && (
+          <section className="report-section report-roadmap-section report-avoid-break">
+            <h2>What {client.name} Is Trying to Achieve</h2>
+            {threeProblems && <p className="report-three-problems">"{threeProblems}"</p>}
+            <div className="report-objective-chips">{selectedObjectives.map((o) => <span key={o} className="report-objective-chip">{o}</span>)}</div>
+            {objectiveFindings.length > 0 ? (
+              <div className="report-objective-findings">
+                {objectiveFindings.map((f) => (
+                  <div className="report-objective-finding" key={f.id}>
+                    <div className="report-objective-finding-head">
+                      <strong>{f.concept}</strong>
+                      <span className="report-table-score">{f.score}/5</span>
+                    </div>
+                    {f.commercialImpact && <p className="report-objective-finding-impact">{f.commercialImpact.narrative}</p>}
+                    {f.improvementBands?.find((b) => b.score === f.score)?.recommendation && (
+                      <p className="report-objective-finding-opportunity">
+                        <strong>Opportunity:</strong> {f.improvementBands.find((b) => b.score === f.score).recommendation}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="report-muted">These objectives haven't yet been connected to a scored finding — complete more of the assessment to build this section out.</p>
+            )}
+          </section>
+        )}
+
+        {hypothesis?.statement && (
+          <section className="report-section report-hypothesis-section report-avoid-break">
+            <h2>Consultancy Hypothesis</h2>
+            <p className="report-three-problems">"{hypothesis.statement}"</p>
+            {hypothesisReview && hypothesisReview.status !== "Not Yet Tested" ? (
+              <>
+                <span className={`report-hypothesis-status report-hypothesis-status-${hypothesisReview.status.replace(/\s+/g, "-").toLowerCase()}`}>
+                  {hypothesisReview.status}
+                </span>
+                <p className="report-hypothesis-narrative">
+                  {hypothesisReview.status === "Supported" && `The evidence gathered confirms this theory — the indicators this hypothesis was tested against scored an average of ${hypothesisReview.averageScore} out of 5, showing this is a genuine and significant limiting factor.`}
+                  {hypothesisReview.status === "Not Supported" && `The evidence gathered does not support this theory — the indicators this hypothesis was tested against scored an average of ${hypothesisReview.averageScore} out of 5, well evidenced. Whatever is actually limiting performance sits elsewhere, and the findings below should be read with that in mind.`}
+                  {hypothesisReview.status === "Partially Supported" && `The evidence is mixed. Some of the indicators this hypothesis was tested against confirm the theory, others don't — the detail below distinguishes which is which, rather than treating this as a single yes or no answer.`}
+                </p>
+                <table className="report-table">
+                  <thead><tr><th>Indicator</th><th>Score</th></tr></thead>
+                  <tbody>
+                    {hypothesisReview.relevant.map((r) => (
+                      <tr key={r.id}><td>{r.concept}</td><td className="report-table-score">{r.score > 0 ? `${r.score}/5` : "Not yet scored"}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : (
+              <p className="report-muted">This hypothesis has not yet been tested against scored evidence.</p>
+            )}
+          </section>
+        )}
+
         <section className="report-section report-summary">
           <h2>Executive Summary</h2>
+          {selectedObjectives.length > 0 && (
+            <p className="report-score-context">The score below is supporting evidence for the findings above, not the headline of this report.</p>
+          )}
           <div className="report-summary-grid">
             <div className="report-score-block">
               <span className="report-score">{overall}</span>

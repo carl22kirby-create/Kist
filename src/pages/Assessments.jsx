@@ -16,9 +16,9 @@ export default function Assessments({ data, setData, selectedClient, setSelected
 
   return (
     <section>
-      <PageHeader title="Assessment Engine" subtitle="Dynamically assembled per client: universal questions plus matched industry, capability and regulatory modules." action={<button className="primary">Save Assessment</button>} />
+      <PageHeader title="Business Performance Indicators" subtitle="Dynamically assembled per client from the KIST Knowledge Base, and rolled up into the overall Business Performance Score." action={<button className="primary">Save Assessment</button>} />
       <div className="card"><label>Client<select value={clientId} onChange={(e) => chooseClient(e.target.value)}>{data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label></div>
-      <AssessmentPanel answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />
+      <AssessmentPanel data={data} setData={setData} clientId={client.id} answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />
     </section>
   );
 }

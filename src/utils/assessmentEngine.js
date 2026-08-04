@@ -30,6 +30,29 @@ function genericImprovement() {
   return GENERIC_IMPROVEMENT_RECOMMENDATIONS.map((recommendation, score) => ({ score, recommendation }));
 }
 
+// Shared default shape for the workflow fields every assessment item
+// carries, regardless of whether it's Universal or Knowledge Base. These
+// are additive to the original notes/evidence/action fields (never
+// replacing them) so nothing already built on those breaks.
+function defaultWorkflowFields() {
+  return {
+    observationNotes: { positives: "", concerns: "", risks: "" },
+    consultantAssessment: { strengths: "", weaknesses: "", risks: "", opportunities: "", overall: "" },
+    justification: "",
+    professionalJudgement: "",
+    escalationFlags: [],
+    storyTags: [],
+    timeline: { startedAt: null, lastEditedAt: null, completedAt: null, reviewedBy: "", history: [] },
+    improvementPlan: {
+      required: "", expectedOutcome: "", recommendedActions: "", priority: "Medium", businessImpact: "",
+      owner: "", targetDate: "", reviewDate: "", successMeasure: "", targetScore: 5,
+      progressStatus: "Not Started", consultantRecommendation: ""
+    },
+    evidenceChecklist: {},
+    observationChecklist: {}
+  };
+}
+
 // Knowledge Base concepts get sequential ids continuing after the 250
 // universal questions (1-250), so existing per-client persisted answers —
 // keyed by question id — are never disturbed by editing or extending the
@@ -42,15 +65,21 @@ const finalisedKnowledgeItems = knowledgeBase.map((entry, i) => ({
   conceptPurpose: entry.concept.purpose,
   category: entry.concept.category,
   tags: entry.concept.tags,
+  relatedConcepts: entry.concept.relatedConcepts || [],
+  relevantObjectives: entry.concept.relevantObjectives || [],
   type: entry.concept.type,
   question: entry.method.question,
+  supportingQuestions: entry.method.supportingQuestions || [],
+  followUpQuestions: entry.method.followUpQuestions || [],
   evidenceType: inferEvidenceType(entry.method.question),
   evidenceRequired: entry.method.evidenceRequired,
   observationPoints: entry.method.observationPoints,
   metrics: entry.method.metrics,
   frequency: entry.method.frequency,
   scoringBands: entry.scoring,
-  improvementBands: entry.improvement,
+  improvementBands: entry.opportunity,
+  commercialImpact: entry.commercialImpact,
+  guidanceContent: entry.guidance,
   journeyStage: "Internal",
   guidance: entry.concept.type === "observation"
     ? "Score this from direct observation during the visit rather than by asking the client. Evidence should always outweigh opinion."
@@ -60,20 +89,28 @@ const finalisedKnowledgeItems = knowledgeBase.map((entry, i) => ({
   evidence: "",
   action: "",
   risk: "Medium",
-  priority: "Medium"
+  priority: "Medium",
+  ...defaultWorkflowFields()
 }));
 
 const universalItems = questionsSeed.map((q) => ({
   ...q,
   concept: q.concept || q.question.split(",")[0].replace(/^(Explain|Describe|What|How|Walk me through)\s*/i, "").slice(0, 60),
   conceptPurpose: null,
+  relatedConcepts: [],
+  relevantObjectives: [],
+  commercialImpact: null,
   tags: ["Universal"],
+  supportingQuestions: [],
+  followUpQuestions: [],
   evidenceRequired: [q.evidenceType],
   observationPoints: q.type === "observation" ? ["Direct observation during the visit"] : [],
   metrics: [],
   frequency: null,
   scoringBands: genericScoring(),
-  improvementBands: genericImprovement()
+  improvementBands: genericImprovement(),
+  guidanceContent: null,
+  ...defaultWorkflowFields()
 }));
 
 // The full library: 250 universal questions (tagged Universal, always
@@ -81,15 +118,34 @@ const universalItems = questionsSeed.map((q) => ({
 // say which Business Profile characteristics make it relevant.
 export const fullQuestionLibrary = [...universalItems, ...finalisedKnowledgeItems];
 
-const defaultProfile = { industry: "Other", capabilities: [], regulations: [], dependencies: {} };
+const defaultProfile = { industry: "Other", capabilities: [], regulations: [], dependencies: {}, objectives: [] };
 
-// A client's active tag set is simply everything true about their business.
+// A handful of objectives genuinely warrant assessing certain concepts
+// regardless of whether a matching capability was ticked — almost any
+// business trying to grow revenue benefits from its website and sales
+// process being assessed, even one that never explicitly identifies as
+// having a "Sales Team". This is deliberately small and curated, not a
+// blanket bypass of the tag system: dependencies still hard-exclude, and
+// this only ever ADDS a small, specific set of tags for a stated
+// objective, never removes anything.
+const OBJECTIVE_TAG_HINTS = {
+  "Increase revenue": ["Sales Team"],
+  "Increase enquiries": ["Sales Team"],
+  "Improve conversion": ["Sales Team", "Ecommerce"],
+  "Improve online presence": ["Sales Team", "Ecommerce"]
+};
+
+// A client's active tag set is simply everything true about their business,
+// plus a small set of objective-driven hints (see above).
 function activeTagSet(profile) {
   const p = { ...defaultProfile, ...profile };
   const tags = new Set(["Universal", "Observation"]);
   if (p.industry && p.industry !== "Other") tags.add(p.industry);
   for (const cap of p.capabilities || []) tags.add(cap);
   for (const reg of p.regulations || []) tags.add(reg);
+  for (const obj of p.objectives || []) {
+    for (const hintTag of OBJECTIVE_TAG_HINTS[obj] || []) tags.add(hintTag);
+  }
   return tags;
 }
 

@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions } from "../data/knowledgeBase.js";
+import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions, businessObjectiveOptions, conceptNames } from "../data/knowledgeBase.js";
 
 export default function ClientOnboarding({ data, setData, setPage, setSelectedClient, setCalendarAnchor, onClose }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
+    objectives: [], threeProblems: "",
+    hypothesisStatement: "", hypothesisTargets: [],
     name: "", industry: "", size: "", turnover: "", website: "", address: "",
     profileIndustry: "Other", capabilities: [], regulations: [],
     dependencies: Object.fromEntries(dependencyQuestions.map((d) => [d.field, null])),
@@ -20,14 +22,18 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
   const setDependency = (field, value) => update("dependencies", { ...form.dependencies, [field]: value });
 
   function save() {
-    if (!form.name.trim()) { alert("Please enter a company name."); setStep(1); return; }
+    if (!form.name.trim()) { alert("Please enter a company name."); setStep(3); return; }
     const clientId = "c" + Date.now();
     const client = {
       id: clientId, name: form.name, industry: form.industry || "Not set", size: form.size,
       turnover: form.turnover, website: form.website, address: form.address, score: 0, previous: 0,
       health: "New", status: "Prospect", tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       notes: form.notes,
-      profile: { industry: form.profileIndustry, capabilities: form.capabilities, regulations: form.regulations, dependencies: form.dependencies },
+      profile: {
+        industry: form.profileIndustry, capabilities: form.capabilities, regulations: form.regulations,
+        dependencies: form.dependencies, objectives: form.objectives, threeProblems: form.threeProblems,
+        hypothesis: form.hypothesisStatement ? { statement: form.hypothesisStatement, targetConcepts: form.hypothesisTargets, formedDate: new Date().toISOString().slice(0, 10) } : null
+      },
       contacts: [{ id: "p" + Date.now(), name: form.contactName, role: form.contactRole, email: form.email, phone: form.phone, primary: true }],
       timeline: [{ id: "t" + Date.now(), date: new Date().toISOString().slice(0, 10), type: "Client", title: "Client created" }]
     };
@@ -46,13 +52,45 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
     }
   }
 
-  const totalSteps = 5;
+  const totalSteps = 7;
 
   return (
     <div className="card onboarding-card">
       <div className="wizard-head"><div><h2>Add Client and Book First Consultation</h2><p>Step {step} of {totalSteps}</p></div><button className="secondary" onClick={onClose}>Close</button></div>
       <div className="wizard-progress"><span style={{ width: `${(step / totalSteps) * 100}%` }} /></div>
       {step === 1 && (
+        <div>
+          <h3>What Does This Client Want to Achieve?</h3>
+          <p className="muted objective-intro">Before anything else: if we could only solve three problems during this engagement, what would success look like? This becomes the primary driver of the whole assessment — everything else follows from the answer.</p>
+          <textarea placeholder="In their own words: what are they actually trying to achieve?" value={form.threeProblems} onChange={(e) => update("threeProblems", e.target.value)} />
+          <h4 className="profile-subhead">Business Objectives</h4>
+          <div className="checklist">
+            {businessObjectiveOptions.map((obj) => (
+              <label className="check-row" key={obj}>
+                <input type="checkbox" checked={form.objectives.includes(obj)} onChange={() => toggleInList("objectives", obj)} />
+                {obj}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+      {step === 2 && (
+        <div>
+          <h3>Consultancy Hypothesis</h3>
+          <p className="muted objective-intro">Based on what you know so far, what's your working theory of what's actually limiting this client's stated objectives? This gets tested against the evidence you gather, not assumed to be true — leave it blank if you'd rather form this after the first visit.</p>
+          <textarea placeholder="Working theory: e.g. 'Growth is limited by weak digital conversion, not capacity.'" value={form.hypothesisStatement} onChange={(e) => update("hypothesisStatement", e.target.value)} />
+          <h4 className="profile-subhead">Which BPIs is this hypothesis actually about?</h4>
+          <div className="checklist">
+            {conceptNames.map((name) => (
+              <label className="check-row" key={name}>
+                <input type="checkbox" checked={form.hypothesisTargets.includes(name)} onChange={() => toggleInList("hypothesisTargets", name)} />
+                {name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+      {step === 3 && (
         <div>
           <h3>Company Details</h3>
           <div className="form-grid">
@@ -65,10 +103,10 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
           </div>
         </div>
       )}
-      {step === 2 && (
+      {step === 4 && (
         <div>
           <h3>Business Profile</h3>
-          <p className="muted">This determines which assessment modules apply — the client only sees questions relevant to how their business actually operates.</p>
+          <p className="muted">This determines which assessment items apply — the client only sees indicators relevant to how their business actually operates. Their stated objectives above decide what's prioritised within that.</p>
           <label>Primary Industry Module
             <select value={form.profileIndustry} onChange={(e) => update("profileIndustry", e.target.value)}>
               {industryOptions.map((i) => <option key={i}>{i}</option>)}
@@ -108,7 +146,7 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
           </div>
         </div>
       )}
-      {step === 3 && (
+      {step === 5 && (
         <div>
           <h3>Primary Contact</h3>
           <div className="form-grid">
@@ -119,14 +157,14 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
           </div>
         </div>
       )}
-      {step === 4 && (
+      {step === 6 && (
         <div>
           <h3>Client Notes and Tags</h3>
           <input placeholder="Tags separated by commas" value={form.tags} onChange={(e) => update("tags", e.target.value)} />
           <textarea placeholder="Initial notes" value={form.notes} onChange={(e) => update("notes", e.target.value)} />
         </div>
       )}
-      {step === 5 && (
+      {step === 7 && (
         <div>
           <h3>First Consultation</h3>
           <label className="check-row">

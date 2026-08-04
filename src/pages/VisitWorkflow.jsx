@@ -43,7 +43,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
           )}
           {stage === 1 && <Interview notes={notes} setNotes={setNotes} />}
           {stage === 2 && <Walkthrough notes={notes} setNotes={setNotes} />}
-          {stage === 3 && <AssessmentPanel answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />}
+          {stage === 3 && <AssessmentPanel data={data} setData={setData} clientId={client.id} answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />}
           {stage === 4 && <textarea placeholder="Evidence review notes" value={notes.evidence || ""} onChange={(e) => setNotes({ ...notes, evidence: e.target.value })} />}
           {stage === 5 && (
             <div>

@@ -53,3 +53,20 @@ export function ReportRows({ reports, setPage, setSelectedClient }) {
     </div>
   );
 }
+
+export function EscalationRows({ escalations, setPage, setSelectedClient }) {
+  return (
+    <div>
+      {escalations.map((e) => (
+        <button
+          className="row"
+          key={`${e.clientId}-${e.id}`}
+          onClick={() => { setSelectedClient(e.clientId); setPage("client"); }}
+        >
+          <span><strong>{e.clientName}</strong><small>{e.concept} · {e.category}</small></span>
+          <b>{e.flags.join(", ")}</b>
+        </button>
+      ))}
+    </div>
+  );
+}

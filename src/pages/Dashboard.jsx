@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Plus, LayoutDashboard } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
 import BusinessDNA from "../components/BusinessDNA.jsx";
-import { ClientRows, ScheduleRows, ScoreRows, ReportRows } from "../components/Rows.jsx";
+import { ClientRows, ScheduleRows, ScoreRows, ReportRows, EscalationRows } from "../components/Rows.jsx";
+import { getAllEscalations } from "../utils/scoring.js";
 
 const DEFAULT_WIDGETS = { metrics: true, diary: true, health: true, dna: true, reports: true, actions: true, ai: true };
 
@@ -10,6 +11,7 @@ export default function Dashboard({ data, setData, setPage, setSelectedClient, s
   const [detail, setDetail] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
   const widgets = data.widgets || DEFAULT_WIDGETS;
+  const escalations = getAllEscalations(data);
 
   function saveWidgets(next) {
     setData({ ...data, widgets: next });
@@ -124,6 +126,18 @@ export default function Dashboard({ data, setData, setPage, setSelectedClient, s
             <h2>AI Alerts</h2>
             <p className="muted">ABC Engineering has high operational risk. Suggested action: process mapping workshop.</p>
             <p className="muted">Demo Company has a report due. Suggested action: complete executive summary.</p>
+          </button>
+        )}
+        {escalations.length > 0 && (
+          <button className="widget escalation-widget" onClick={() => setDetail({ title: "Escalations", body: <EscalationRows escalations={escalations} setPage={setPage} setSelectedClient={setSelectedClient} /> })}>
+            <h2>Escalations</h2>
+            {escalations.slice(0, 4).map((e) => (
+              <div className="row" key={`${e.clientId}-${e.id}`}>
+                <span><strong>{e.clientName}</strong><small>{e.concept} · {e.flags.join(", ")}</small></span>
+                <b className="escalation-count">{e.flags.length}</b>
+              </div>
+            ))}
+            {escalations.length > 4 && <em>+{escalations.length - 4} more</em>}
           </button>
         )}
       </div>
