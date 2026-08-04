@@ -15,6 +15,7 @@ import Foundation from "./pages/Foundation.jsx";
 import Versions from "./pages/Versions.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import ClientReport from "./pages/ClientReport.jsx";
+import KistFlyer from "./pages/KistFlyer.jsx";
 import { checkSession, login, logout, fetchData, saveData, resetData as apiResetData } from "./api.js";
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -112,6 +113,10 @@ export default function App() {
 
   if (page === "report") {
     return <ClientReport {...props} />;
+  }
+
+  if (page === "flyer") {
+    return <KistFlyer {...props} />;
   }
 
   const pages = {
