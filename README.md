@@ -378,7 +378,77 @@ while fixing this surfaced an actual live example: ABC Engineering was
 tagged "Engineering" for display but "Manufacturing" for matching. Now
 there's one field, one comprehensive ~20-option list, driving both.
 
+## KIST Brain (v6.0.0)
+
+The AI Consultant page is real now — it was a static placeholder before
+this. Every question is answered by Google Gemini, but only ever using
+that specific client's actually recorded evidence: scores, notes, evidence
+text, justifications, commercial impact, and current hypothesis status.
+
+**How the grounding actually works** (`lib/kistBrain.js`):
+1. `buildEvidenceContext` pulls every scored BPI for the selected client —
+   nothing unscored, nothing from other clients, nothing invented.
+2. `buildSystemInstruction` wraps that evidence in strict rules: only state
+   what's directly supported by the evidence, cite every claim back to a
+   specific concept with the exact quoted text, and if the evidence doesn't
+   cover the question, say so explicitly rather than filling the gap with
+   generic advice.
+3. Gemini is called with **controlled JSON output** (`responseSchema` in
+   `lib/gemini.js`) rather than just asking nicely for citations in prose —
+   this is what makes citations structurally reliable rather than
+   best-effort text parsing that could silently fail.
+
+I tested the retrieval logic directly and confirmed it's correct — the
+evidence context includes exactly the scored items, with exact text, and
+excludes everything else. **I could not test the actual Gemini API call.**
+This sandbox has no network access to Google's API and no key was ever
+available here. Once you deploy this with a real key, that's the very
+first thing to check — ask it something simple about a client with a few
+scored BPIs and confirm the citations actually quote real recorded text.
+
+### Setting this up
+
+1. Get a key from [Google AI Studio](https://aistudio.google.com/apikey) —
+   free tier exists but has rate limits worth checking against your
+   expected usage at [ai.google.dev/pricing](https://ai.google.dev/pricing).
+2. In Vercel: Settings → Environment Variables → add `GEMINI_API_KEY`.
+   `GEMINI_MODEL` is optional (defaults to `gemini-1.5-flash`) — check
+   [the current model list](https://ai.google.dev/gemini-api/docs/models)
+   since names and capabilities change over time.
+3. Redeploy.
+
+### Can two businesses share the same API key?
+
+Technically yes, with real caveats worth knowing before you do it:
+
+- **Billing and rate limits are shared.** One API key means one quota and
+  one bill. If business A has a busy month, it can eat into business B's
+  rate limit or (on a paid tier) run up shared cost with no separation.
+  You would not be able to tell, from the key alone, which business
+  generated which charge.
+- **Data isolation is handled by this app, not by the key.** KIST Brain
+  already scopes every request to one client's evidence via `clientId` —
+  a shared key doesn't leak data between clients or businesses, because
+  the grounding logic never sends more than the selected client's own
+  evidence in the first place. The risk here is purely about **cost and
+  quota**, not about one business's data leaking into another's answer.
+- **My recommendation**: use **separate API keys per business**, even
+  though they're both free to create. It costs nothing extra, gives you
+  clean, separate usage tracking in Google's console per business, and
+  means a usage spike or rate limit on one business's key can never affect
+  the other's. If they're run as genuinely separate consultancies rather
+  than one business wearing two hats, I'd treat this as the sensible
+  default rather than an optimisation — shared billing across two
+  unrelated businesses tends to cause exactly the kind of "whose usage was
+  that" conversation you don't want to have later.
+- Practically: create a second Google account (or a second project inside
+  the same Google Cloud account) and generate a second key from AI Studio,
+  then set `GEMINI_API_KEY` to the relevant key in each business's own
+  Vercel project.
+
 ## Architecture
+
+
 
 - **Frontend**: unchanged from the Railway version — same pages, same
   `src/api.js` calls. It doesn't know or care that the backend changed.

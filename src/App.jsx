@@ -134,7 +134,7 @@ export default function App() {
     reports: <Reports {...props} />,
     actions: <Actions {...props} />,
     analytics: <Analytics {...props} />,
-    ai: <AI />,
+    ai: <AI {...props} />,
     foundation: <Foundation />,
     versions: <Versions />,
     settings: <SettingsPage {...props} onLogout={handleLogout} />

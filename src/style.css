@@ -366,3 +366,23 @@
 .report-photo-card img{width:100%;height:200px;object-fit:cover;display:block}
 .report-photo-card p{margin:0;padding:10px 12px;color:#33405C;font-size:12.5px}
 @media(max-width:600px){.report-photo-grid{grid-template-columns:1fr}}
+
+/* --- AI Consultant / KIST Brain --- */
+.ai-setup-card{margin-bottom:16px}
+.ai-setup-card label{display:grid;gap:6px;color:var(--muted);font-size:13px;margin-bottom:10px}
+.ai-conversation-card{min-height:200px;display:flex;flex-direction:column;gap:16px}
+.ai-turn{max-width:85%}
+.ai-turn-user{align-self:flex-end;background:rgba(69,165,255,.12);border:1px solid rgba(69,165,255,.3);border-radius:12px;padding:10px 16px}
+.ai-turn-user p{margin:0;color:white;font-size:14px}
+.ai-turn-assistant{align-self:flex-start;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ai-answer-text{color:white;font-size:14px;line-height:1.6;margin:0 0 12px}
+.ai-ungrounded-banner{display:flex;align-items:center;gap:8px;background:rgba(255,92,92,.12);color:#ff8a8a;border:1px solid rgba(255,92,92,.35);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:12px}
+.ai-insufficient-note{color:var(--muted);font-size:13px;font-style:italic;margin:0 0 12px}
+.ai-citations{border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+.ai-citations b{display:block;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.ai-citation{margin-bottom:8px}
+.ai-citation-concept{display:block;color:var(--blue);font-size:12px;font-weight:700}
+.ai-citation-quote{display:block;color:var(--muted);font-size:12.5px;font-style:italic;margin-top:2px}
+.ai-error{display:flex;align-items:center;gap:8px;color:#ff8a8a;font-size:13px}
+.ai-input-row{display:flex;gap:10px;margin-top:16px}
+.ai-input-row input{flex:1}
