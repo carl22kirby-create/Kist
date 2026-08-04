@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Tag, Mail, Phone, Layers, Target, FlaskConical } from "lucide-react";
+import { Tag, Mail, Phone, Layers, Target, FlaskConical, Pencil } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
+import Toast from "../components/Toast.jsx";
 import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions, businessObjectiveOptions, conceptNames } from "../data/knowledgeBase.js";
 import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
 import { getClientAssessment, reviewHypothesis } from "../utils/scoring.js";
@@ -10,6 +11,9 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   const [showBooking, setShowBooking] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showHypothesisEditor, setShowHypothesisEditor] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
   const [booking, setBooking] = useState({ date: "2026-07-08", start: "09:00", end: "10:00", type: "First Consultation", consultant: "Carl Kirby", location: client.address || "" });
   const profile = client.profile || { industry: "Other", capabilities: [], regulations: [], dependencies: {}, objectives: [], threeProblems: "", hypothesis: null };
   const activeModules = activeModulesForProfile(profile);
@@ -37,6 +41,34 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
     updateHypothesis("targetConcepts", list.includes(name) ? list.filter((n) => n !== name) : [...list, name]);
   }
 
+  function startEditingDetails() {
+    setDetailsForm({
+      name: client.name, industry: client.industry || "", size: client.size || "", turnover: client.turnover || "",
+      website: client.website || "", address: client.address || "", status: client.status || "Active",
+      notes: client.notes || "", tags: (client.tags || []).join(", ")
+    });
+    setEditingDetails(true);
+  }
+  function saveDetails() {
+    if (!detailsForm.name.trim()) { alert("Company name can't be empty."); return; }
+    setData({
+      ...data,
+      clients: data.clients.map((c) => c.id === client.id ? {
+        ...c,
+        name: detailsForm.name.trim(), industry: detailsForm.industry, size: detailsForm.size,
+        turnover: detailsForm.turnover, website: detailsForm.website, address: detailsForm.address,
+        status: detailsForm.status, notes: detailsForm.notes,
+        tags: detailsForm.tags.split(",").map((t) => t.trim()).filter(Boolean)
+      } : c)
+    });
+    setEditingDetails(false);
+    setToastMessage("Client details saved");
+  }
+  function cancelEditingDetails() {
+    setEditingDetails(false);
+    setDetailsForm(null);
+  }
+
   function book() {
     const appointment = { id: "s" + Date.now(), date: booking.date, start: booking.start, end: booking.end, clientId: client.id, client: client.name, type: booking.type, consultant: booking.consultant, location: booking.location, status: "Scheduled", colour: "gold" };
     const timelineItem = { id: "t" + Date.now(), date: booking.date, type: "Calendar", title: `${booking.type} scheduled` };
@@ -47,19 +79,49 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   return (
     <section>
       <PageHeader title={client.name} subtitle="Client workspace, contacts, diary, reports, timeline and actions." action={<button className="secondary" onClick={() => setPage("clients")}>Back</button>} />
+      <Toast message={toastMessage} onDone={() => setToastMessage("")} />
       <div className="grid">
         <div className="card wide">
-          <h2>Client Overview</h2>
-          <p className="muted">{client.notes || "No notes recorded yet."}</p>
-          <div className="detail-grid">
-            <p><strong>Industry:</strong> {client.industry}</p>
-            <p><strong>Size:</strong> {client.size || "Not set"}</p>
-            <p><strong>Turnover:</strong> {client.turnover || "Not set"}</p>
-            <p><strong>Website:</strong> {client.website || "Not set"}</p>
-            <p><strong>Address:</strong> {client.address || "Not set"}</p>
-            <p><strong>Status:</strong> {client.status}</p>
+          <div className="card-head-row">
+            <h2>Client Overview</h2>
+            {!editingDetails && <button className="secondary edit-button" onClick={startEditingDetails}><Pencil size={14} /> Edit</button>}
           </div>
-          <div className="client-tags">{(client.tags || []).map((t) => <span key={t}><Tag size={12} />{t}</span>)}</div>
+          {!editingDetails ? (
+            <>
+              <p className="muted">{client.notes || "No notes recorded yet."}</p>
+              <div className="detail-grid">
+                <p><strong>Industry:</strong> {client.industry}</p>
+                <p><strong>Size:</strong> {client.size || "Not set"}</p>
+                <p><strong>Turnover:</strong> {client.turnover || "Not set"}</p>
+                <p><strong>Website:</strong> {client.website || "Not set"}</p>
+                <p><strong>Address:</strong> {client.address || "Not set"}</p>
+                <p><strong>Status:</strong> {client.status}</p>
+              </div>
+              <div className="client-tags">{(client.tags || []).map((t) => <span key={t}><Tag size={12} />{t}</span>)}</div>
+            </>
+          ) : (
+            <div className="edit-details-form">
+              <div className="form-grid">
+                <label>Company Name<input value={detailsForm.name} onChange={(e) => setDetailsForm({ ...detailsForm, name: e.target.value })} /></label>
+                <label>Industry (display label)<input value={detailsForm.industry} onChange={(e) => setDetailsForm({ ...detailsForm, industry: e.target.value })} /></label>
+                <label>Size<input value={detailsForm.size} onChange={(e) => setDetailsForm({ ...detailsForm, size: e.target.value })} /></label>
+                <label>Turnover<input value={detailsForm.turnover} onChange={(e) => setDetailsForm({ ...detailsForm, turnover: e.target.value })} /></label>
+                <label>Website<input value={detailsForm.website} onChange={(e) => setDetailsForm({ ...detailsForm, website: e.target.value })} /></label>
+                <label>Address<input value={detailsForm.address} onChange={(e) => setDetailsForm({ ...detailsForm, address: e.target.value })} /></label>
+                <label>Status
+                  <select value={detailsForm.status} onChange={(e) => setDetailsForm({ ...detailsForm, status: e.target.value })}>
+                    <option>Prospect</option><option>Active</option><option>New</option><option>Inactive</option>
+                  </select>
+                </label>
+                <label>Tags (comma separated)<input value={detailsForm.tags} onChange={(e) => setDetailsForm({ ...detailsForm, tags: e.target.value })} /></label>
+              </div>
+              <label className="notes-label">Notes<textarea value={detailsForm.notes} onChange={(e) => setDetailsForm({ ...detailsForm, notes: e.target.value })} /></label>
+              <div className="edit-actions">
+                <button className="secondary" onClick={cancelEditingDetails}>Cancel</button>
+                <button className="primary" onClick={saveDetails}>Save Changes</button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="card wide objectives-card">
           <h2><Target size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What This Client Wants to Achieve</h2>

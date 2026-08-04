@@ -245,3 +245,35 @@
 .report-hypothesis-status-partially-supported{background:#FFF4E0;color:#9A6B00}
 .report-hypothesis-status-not-supported{background:#FDEBEB;color:#B23A3A}
 .report-hypothesis-narrative{color:#33405C;font-size:13.5px;margin:0 0 14px}
+
+/* --- Toast notification --- */
+.toast{position:fixed;top:24px;right:24px;z-index:1000;display:flex;align-items:center;gap:10px;background:#1a3a1a;border:1px solid rgba(104,216,87,.5);color:white;padding:14px 20px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;font-weight:600;animation:toast-in .25s ease-out}
+.toast svg{color:var(--green);flex-shrink:0}
+@keyframes toast-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+/* --- Edit Client Details --- */
+.card-head-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-head-row h2{margin:0}
+.edit-button{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px}
+.edit-details-form{display:grid;gap:14px}
+.edit-details-form label{display:grid;gap:6px;color:var(--muted);font-size:13px}
+.notes-label textarea{min-height:80px}
+.edit-actions{display:flex;justify-content:flex-end;gap:10px}
+
+/* --- Quick Score Mode --- */
+.quick-score-toggle{width:100%;margin-bottom:8px}
+.quick-score-scope-toggle{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin-bottom:14px}
+.quick-score-panel{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:24px}
+.quick-score-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px}
+.quick-score-header h2{margin:0 0 4px}
+.quick-score-list{display:flex;flex-direction:column;gap:8px;max-height:75vh;overflow-y:auto}
+.quick-score-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.02)}
+.quick-score-row.scored{border-color:rgba(104,216,87,.35);background:rgba(104,216,87,.04)}
+.quick-score-question{flex:1;display:flex;align-items:center;gap:10px;background:none;border:none;text-align:left;padding:0;min-width:0}
+.quick-score-traffic{flex-shrink:0}
+.quick-score-concept{color:var(--gold);font-weight:700;font-size:12px;flex-shrink:0;white-space:nowrap}
+.quick-score-text{color:white;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick-score-buttons{display:flex;gap:4px;flex-shrink:0}
+.quick-score-buttons button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:white;font-size:13px;font-weight:700}
+.quick-score-buttons button.selected{background:var(--gold);color:#04142F;border-color:var(--gold)}
+.kbd-hint{margin:-6px 0 10px}

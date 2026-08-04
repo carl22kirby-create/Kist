@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { escalationFlagOptions } from "../data/knowledgeBase.js";
+import QuickScorePanel from "./QuickScorePanel.jsx";
 import {
   categoryScores, calculateOverall, isItemComplete, isImprovementPlanRequired, isImprovementPlanComplete,
   saveAssessmentRound, getPreviousRoundAnswer, getLatestRound, getAssessmentStatus, getTrafficLight,
@@ -16,6 +17,8 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
   const [showRoundBox, setShowRoundBox] = useState(false);
   const [showGuidance, setShowGuidance] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [quickScoreMode, setQuickScoreMode] = useState(false);
+  const [quickScorePriorityOnly, setQuickScorePriorityOnly] = useState(false);
   const client = data.clients.find((c) => c.id === clientId);
   const selectedObjectives = client?.profile?.objectives || [];
   const catScores = categoryScores(answers);
@@ -24,6 +27,11 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
   const priorityUnscored = selectedObjectives.length > 0
     ? sortByObjectivePriority(answers, selectedObjectives).filter((a) => getObjectivePriority(a, selectedObjectives) > 0 && a.score === 0).slice(0, 6)
     : [];
+  const priorityIds = new Set(
+    selectedObjectives.length > 0
+      ? answers.filter((a) => getObjectivePriority(a, selectedObjectives) > 0).map((a) => a.id)
+      : answers.map((a) => a.id)
+  );
   const hypothesis = client?.profile?.hypothesis;
   const hypothesisReview = reviewHypothesis(answers, hypothesis);
   const quality = computeAssessmentQuality(answers);
@@ -79,6 +87,28 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
     setShowRoundBox(false);
   }
 
+  // Keyboard shortcuts for the detailed view: 1-5 scores the current item,
+  // left/right arrows navigate. Disabled while typing in any input,
+  // textarea or select so normal typing (including "5" in a phone number)
+  // is never hijacked, and disabled entirely in Quick Score mode, which
+  // has its own click-driven flow.
+  useEffect(() => {
+    if (quickScoreMode) return;
+    function handleKeyDown(e) {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key >= "1" && e.key <= "5") {
+        update(q.id, { score: Number(e.key) });
+      } else if (e.key === "ArrowRight" && currentQuestion < answers.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      } else if (e.key === "ArrowLeft" && currentQuestion > 0) {
+        setCurrentQuestion(currentQuestion - 1);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [quickScoreMode, q, currentQuestion, answers.length]);
+
   return (
     <div className="assessment-embed">
       <div className="assessment-sidebar">
@@ -118,6 +148,15 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
           </div>
         )}
         {latestRound && <p className="round-reference">Last round saved: {latestRound.date}{latestRound.label ? ` — ${latestRound.label}` : ""}</p>}
+        <button className="primary quick-score-toggle" onClick={() => setQuickScoreMode(!quickScoreMode)}>
+          {quickScoreMode ? "Exit Quick Score" : "Quick Score Mode"}
+        </button>
+        {!quickScoreMode && (
+          <label className="quick-score-scope-toggle">
+            <input type="checkbox" checked={quickScorePriorityOnly} onChange={(e) => setQuickScorePriorityOnly(e.target.checked)} />
+            Priority indicators only, when entering Quick Score
+          </label>
+        )}
         <button className="secondary round-save-button" onClick={() => setShowRoundBox(!showRoundBox)}>Save Assessment Round</button>
         {showRoundBox && (
           <div className="round-box">
@@ -138,6 +177,16 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
           ))}
         </div>
       </div>
+      {quickScoreMode ? (
+        <QuickScorePanel
+          answers={answers}
+          setAnswers={setAnswers}
+          filterPriorityOnly={quickScorePriorityOnly}
+          priorityIds={priorityIds}
+          onOpenDetail={(id) => { setQuickScoreMode(false); setCurrentQuestion(answers.findIndex((a) => a.id === id)); }}
+          onExit={() => setQuickScoreMode(false)}
+        />
+      ) : (
       <div className="assessment-question">
         <div className="q-tags">
           <span className="gold">{q.category}</span>
@@ -287,6 +336,7 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
         </div>
 
         <h4 className="section-heading">Business Performance Score</h4>
+        <p className="muted-small kbd-hint">Tip: press 1–5 to score, ← → to move between questions.</p>
         <div className="score-buttons">
           {[1, 2, 3, 4, 5].map((score) => (
             <button key={score} className={q.score === score ? "selected" : ""} onClick={() => update(q.id, { score })}>
@@ -400,6 +450,7 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
           <button className="secondary" disabled={currentQuestion === answers.length - 1} onClick={() => setCurrentQuestion(currentQuestion + 1)}>Next Question</button>
         </div>
       </div>
+      )}
     </div>
   );
 }
