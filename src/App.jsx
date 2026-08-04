@@ -17,6 +17,7 @@ import SettingsPage from "./pages/SettingsPage.jsx";
 import ClientReport from "./pages/ClientReport.jsx";
 import KistFlyer from "./pages/KistFlyer.jsx";
 import Presentation from "./pages/Presentation.jsx";
+import QuoteDocument from "./pages/QuoteDocument.jsx";
 import { checkSession, login, logout, fetchData, saveData, resetData as apiResetData } from "./api.js";
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -25,6 +26,7 @@ export default function App() {
   const [authState, setAuthState] = useState("checking"); // checking | out | in
   const [page, setPage] = useState("dashboard");
   const [selectedClient, setSelectedClient] = useState("c1");
+  const [selectedQuote, setSelectedQuote] = useState(null);
   const [calendarAnchor, setCalendarAnchor] = useState("2026-07-06");
   const [data, setDataState] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -134,7 +136,7 @@ export default function App() {
     return <div className="app-loading">Loading KIST One…</div>;
   }
 
-  const props = { data, setData, page, setPage, selectedClient, setSelectedClient, calendarAnchor, setCalendarAnchor, resetData };
+  const props = { data, setData, page, setPage, selectedClient, setSelectedClient, selectedQuote, setSelectedQuote, calendarAnchor, setCalendarAnchor, resetData };
 
   if (page === "report") {
     return <ClientReport {...props} />;
@@ -146,6 +148,10 @@ export default function App() {
 
   if (page === "present") {
     return <Presentation {...props} />;
+  }
+
+  if (page === "quote") {
+    return <QuoteDocument {...props} />;
   }
 
   const pages = {

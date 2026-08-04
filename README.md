@@ -484,6 +484,50 @@ becomes a recurring concern beyond this specific failure mode, the next
 layer would be point-in-time backups on the Supabase side, which is a
 dashboard setting worth turning on regardless.
 
+## Quotes and Terms Release (v6.2.0)
+
+Every client can now have a quote created — line items, VAT, a valid-until
+date — issued with the full KIST Terms and Conditions attached as one
+printable document.
+
+**Architecture decision worth understanding**: quotes are deliberately
+built OUTSIDE the general save mechanism (`replace_full_data`) used for
+everything else in this app. That pattern replaces the entire dataset from
+browser memory on every save — right for day to day editing, wrong for a
+financial document that needs a genuine audit trail. A quote can only be
+created (`create_quote`) or have its status changed
+(`update_quote_status`) via narrow, dedicated database functions. It can
+never be silently rewritten by a stale save, and — unlike everything
+else — **it is not affected by Settings → Reset to Seed Data.**
+
+**Business Legal Details** (Settings page) holds the name, structure,
+company number, registered office, address and liability cap that get
+substituted into the Terms template. Each quote freezes a snapshot of
+these details at the exact moment of issue (`business_details_snapshot`
+in the `quotes` table), so correcting a detail later never rewrites what
+was actually issued historically — the audit record stays honest.
+
+**On the placeholders specifically**: the Terms and Conditions text
+supplied still has unfilled brackets — `[INSERT FULL LEGAL NAME]`,
+`[INSERT LIABILITY CAP]`, and others. I did not invent plausible-sounding
+values for these. Guessing at a company number or a liability cap is
+exactly the kind of thing that creates real legal exposure if wrong.
+Instead, any Business Legal Details field left blank renders with its
+original `[INSERT ...]` placeholder on an issued quote — visibly,
+obviously incomplete, rather than silently wrong. **Fill these in via
+Settings before the first real quote goes to a client.** The liability
+cap in particular is a genuine legal decision, not a formality — worth
+checking with a solicitor or your insurer before setting it, since it
+directly limits what a client could recover from a claim.
+
+**Tested before shipping, not just written**: quote creation, the
+auto-numbering sequence, status transitions, and invalid-status rejection
+were all confirmed directly against the live database. The rendered
+document — quote details followed by the full Terms — was actually
+generated and visually checked, confirming the layout holds up and that
+unfilled placeholders display correctly, before any of this was called
+done.
+
 ## Architecture
 
 

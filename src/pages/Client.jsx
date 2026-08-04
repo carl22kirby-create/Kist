@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { Tag, Mail, Phone, Layers, Target, FlaskConical, Pencil } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Tag, Mail, Phone, Layers, Target, FlaskConical, Pencil, FileText, Plus, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
 import Toast from "../components/Toast.jsx";
 import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions, businessObjectiveOptions, conceptNames } from "../data/knowledgeBase.js";
 import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
 import { getClientAssessment, reviewHypothesis } from "../utils/scoring.js";
+import { getQuotesForClient, createQuote, updateQuoteStatus } from "../api.js";
 
-export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor }) {
+export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor, setSelectedQuote }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const [showBooking, setShowBooking] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -14,6 +15,10 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   const [editingDetails, setEditingDetails] = useState(false);
   const [detailsForm, setDetailsForm] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
+  const [quotes, setQuotes] = useState([]);
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteForm, setQuoteForm] = useState(null);
+  const [quotesError, setQuotesError] = useState("");
   const [booking, setBooking] = useState({ date: "2026-07-08", start: "09:00", end: "10:00", type: "First Consultation", consultant: "Carl Kirby", location: client.address || "" });
   const profile = client.profile || { industry: "Other", capabilities: [], regulations: [], dependencies: {}, objectives: [], threeProblems: "", hypothesis: null };
   const activeModules = activeModulesForProfile(profile);
@@ -68,6 +73,63 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   function cancelEditingDetails() {
     setEditingDetails(false);
     setDetailsForm(null);
+  }
+
+  useEffect(() => {
+    getQuotesForClient(client.id).then(setQuotes).catch((err) => setQuotesError(err.message));
+  }, [client.id]);
+
+  function startNewQuote() {
+    const today = new Date().toISOString().slice(0, 10);
+    const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    setQuoteForm({
+      servicesDescription: "", issuedDate: today, validUntil,
+      lineItems: [{ description: "", quantity: 1, unitPrice: 0 }],
+      vatRate: 20, notes: ""
+    });
+    setShowQuoteForm(true);
+  }
+
+  function updateLineItem(index, field, value) {
+    const items = [...quoteForm.lineItems];
+    items[index] = { ...items[index], [field]: value };
+    setQuoteForm({ ...quoteForm, lineItems: items });
+  }
+  function addLineItem() {
+    setQuoteForm({ ...quoteForm, lineItems: [...quoteForm.lineItems, { description: "", quantity: 1, unitPrice: 0 }] });
+  }
+  function removeLineItem(index) {
+    setQuoteForm({ ...quoteForm, lineItems: quoteForm.lineItems.filter((_, i) => i !== index) });
+  }
+
+  function quoteTotals(form) {
+    const subtotal = form.lineItems.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0);
+    const vatAmount = subtotal * (Number(form.vatRate) / 100);
+    return { subtotal: Math.round(subtotal * 100) / 100, vatAmount: Math.round(vatAmount * 100) / 100, total: Math.round((subtotal + vatAmount) * 100) / 100 };
+  }
+
+  function submitQuote() {
+    const validItems = quoteForm.lineItems.filter((i) => i.description.trim());
+    if (validItems.length === 0) { alert("Add at least one line item with a description."); return; }
+    const totals = quoteTotals({ ...quoteForm, lineItems: validItems });
+    createQuote({
+      clientId: client.id, issuedDate: quoteForm.issuedDate, validUntil: quoteForm.validUntil,
+      servicesDescription: quoteForm.servicesDescription, lineItems: validItems,
+      subtotal: totals.subtotal, vatRate: Number(quoteForm.vatRate), vatAmount: totals.vatAmount, total: totals.total,
+      notes: quoteForm.notes
+    })
+      .then((created) => {
+        setQuotes([created, ...quotes]);
+        setShowQuoteForm(false);
+        setToastMessage(`Quote ${created.quoteNumber} created and filed`);
+      })
+      .catch((err) => alert(err.message));
+  }
+
+  function setQuoteStatus(id, status) {
+    updateQuoteStatus(id, status)
+      .then(() => setQuotes(quotes.map((q) => q.id === id ? { ...q, status } : q)))
+      .catch((err) => alert(err.message));
   }
 
   function book() {
@@ -163,6 +225,65 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+        <div className="card wide quotes-card">
+          <div className="card-head-row">
+            <h2><FileText size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Quotes</h2>
+            <button className="secondary edit-button" onClick={startNewQuote}><Plus size={14} /> New Quote</button>
+          </div>
+          <p className="muted">Kept as a permanent audit record — every issued quote freezes the business details and Terms and Conditions in force at the time, and is never affected by a data reset.</p>
+          {quotesError && <p className="ai-error">{quotesError}</p>}
+
+          {showQuoteForm && quoteForm && (
+            <div className="quote-form">
+              <textarea placeholder="Services description" value={quoteForm.servicesDescription} onChange={(e) => setQuoteForm({ ...quoteForm, servicesDescription: e.target.value })} />
+              <div className="form-grid">
+                <label>Issued Date<input type="date" value={quoteForm.issuedDate} onChange={(e) => setQuoteForm({ ...quoteForm, issuedDate: e.target.value })} /></label>
+                <label>Valid Until<input type="date" value={quoteForm.validUntil} onChange={(e) => setQuoteForm({ ...quoteForm, validUntil: e.target.value })} /></label>
+                <label>VAT Rate %<input type="number" value={quoteForm.vatRate} onChange={(e) => setQuoteForm({ ...quoteForm, vatRate: e.target.value })} /></label>
+              </div>
+              <h4 className="profile-subhead">Line Items</h4>
+              {quoteForm.lineItems.map((item, i) => (
+                <div className="quote-line-item-row" key={i}>
+                  <input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(i, "description", e.target.value)} />
+                  <input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(i, "quantity", e.target.value)} />
+                  <input type="number" placeholder="Unit price" value={item.unitPrice} onChange={(e) => updateLineItem(i, "unitPrice", e.target.value)} />
+                  <button className="evidence-remove-button" onClick={() => removeLineItem(i)}><Trash2 size={14} /></button>
+                </div>
+              ))}
+              <button className="secondary" onClick={addLineItem}><Plus size={14} /> Add Line Item</button>
+              <p className="quote-form-total">Total (inc. VAT): <strong>£{quoteTotals(quoteForm).total.toFixed(2)}</strong></p>
+              <textarea placeholder="Notes (optional)" value={quoteForm.notes} onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })} />
+              <div className="edit-actions">
+                <button className="secondary" onClick={() => setShowQuoteForm(false)}>Cancel</button>
+                <button className="primary" onClick={submitQuote}>Issue Quote</button>
+              </div>
+            </div>
+          )}
+
+          {quotes.length === 0 ? (
+            <p className="muted-small">No quotes issued yet.</p>
+          ) : (
+            <div className="quote-list">
+              {quotes.map((q) => (
+                <div className="quote-row" key={q.id}>
+                  <div>
+                    <strong>{q.quoteNumber}</strong>
+                    <span className="quote-row-meta">{q.issuedDate} · £{Number(q.total).toFixed(2)} · {q.status}</span>
+                  </div>
+                  <div className="quote-row-actions">
+                    <button className="secondary" onClick={() => { setSelectedQuote(q); setPage("quote"); }}>View / Print</button>
+                    {q.status === "Issued" && (
+                      <>
+                        <button className="secondary" onClick={() => setQuoteStatus(q.id, "Accepted")}>Mark Accepted</button>
+                        <button className="secondary" onClick={() => setQuoteStatus(q.id, "Declined")}>Mark Declined</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

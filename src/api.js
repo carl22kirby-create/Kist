@@ -44,3 +44,38 @@ export function saveData(data, expectedVersion) {
 export function resetData() {
   return fetch(`${BASE}/reset`, { method: "POST", credentials: "include" }).then(handle);
 }
+
+export function getBusinessSettings() {
+  return fetch(`${BASE}/business-settings`, { credentials: "include" }).then(handle);
+}
+
+export function saveBusinessSettings(details) {
+  return fetch(`${BASE}/business-settings`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(details)
+  }).then(handle);
+}
+
+export function getQuotesForClient(clientId) {
+  return fetch(`${BASE}/quotes?clientId=${encodeURIComponent(clientId)}`, { credentials: "include" }).then(handle);
+}
+
+export function createQuote(quote) {
+  return fetch(`${BASE}/quotes`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(quote)
+  }).then(handle);
+}
+
+export function updateQuoteStatus(id, status) {
+  return fetch(`${BASE}/quotes`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status })
+  }).then(handle);
+}
