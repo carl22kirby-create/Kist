@@ -42,10 +42,10 @@
 .report-score{display:block;font-size:48px;font-weight:800;color:#0B2A57;line-height:1}
 .report-score-label{display:block;color:#5A6478;font-size:11px;text-transform:uppercase;margin-top:4px}
 .report-band{display:inline-block;margin-top:10px;font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 10px;border-radius:20px;background:#EEF1F7;color:#0B2A57}
-.report-band-excellent{background:#E4F6E8;color:#1E7A3C}
-.report-band-stable{background:#EAF3FF;color:#1D5FAE}
-.report-band-developing{background:#FFF4E0;color:#9A6B00}
-.report-band-at-risk{background:#FDEBEB;color:#B23A3A}
+.report-band-platinum{background:#F0EFFB;color:#5B4FBF}
+.report-band-gold{background:#FFF4E0;color:#9A6B00}
+.report-band-silver{background:#EAF3FF;color:#1D5FAE}
+.report-band-bronze{background:#FDEBEB;color:#B23A3A}
 .report-summary-text{color:#33405C;font-size:15px;margin:0}
 .report-dna-layout{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:center}
 .report-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -430,3 +430,8 @@
 .terms-h2{font-size:14px;color:#0B2A57;margin:16px 0 6px}
 .terms-p{font-size:11.5px;color:#33405C;margin:0 0 6px;line-height:1.5}
 @media print{.terms-h1{page-break-before:always}}
+.presentation-tier-badge{display:inline-block;margin:12px 0 24px;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:800;letter-spacing:.5px}
+.presentation-tier-platinum{background:rgba(157,107,255,.2);color:#c9adff}
+.presentation-tier-gold{background:rgba(246,196,0,.2);color:var(--gold)}
+.presentation-tier-silver{background:rgba(69,165,255,.2);color:var(--blue)}
+.presentation-tier-bronze{background:rgba(255,92,92,.2);color:#ff8a8a}

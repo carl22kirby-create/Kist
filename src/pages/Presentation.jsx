@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import BusinessDNA from "../components/BusinessDNA.jsx";
 import {
-  getClientAssessment, categoryScores, calculateOverall,
+  getClientAssessment, categoryScores, calculateOverall, getScoreTier,
   topCategories, bottomCategories, reviewHypothesis, buildRoadmap
 } from "../utils/scoring.js";
 
@@ -10,6 +10,7 @@ export default function Presentation({ data, selectedClient, setPage }) {
   const answers = getClientAssessment(data, client.id);
   const catScores = categoryScores(answers);
   const overall = calculateOverall(answers);
+  const scoreTier = getScoreTier(overall);
   const strengths = topCategories(catScores, 3);
   const improvements = bottomCategories(catScores, 3);
   const objectives = client.profile?.objectives || [];
@@ -88,6 +89,7 @@ export default function Presentation({ data, selectedClient, setPage }) {
             <h2>Business Performance Score</h2>
             <strong className="presentation-score">{overall}</strong>
             <span className="presentation-score-label">out of 100</span>
+            <span className={`presentation-tier-badge presentation-tier-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
             <BusinessDNA scores={catScores.map((c) => c.score)} />
             <p className="presentation-footnote">This score is the evidence behind the story — not the point of it.</p>
           </div>

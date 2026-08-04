@@ -1,18 +1,10 @@
 import BusinessDNA from "../components/BusinessDNA.jsx";
 import {
-  getClientAssessment, categoryScores, calculateOverall,
+  getClientAssessment, categoryScores, calculateOverall, getScoreTier,
   topCategories, bottomCategories, notableAnswers, getEscalations, getObjectiveFindings, reviewHypothesis
 } from "../utils/scoring.js";
 
 const today = () => new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-
-function scoreBand(score) {
-  if (score >= 80) return "Excellent";
-  if (score >= 65) return "Stable";
-  if (score >= 45) return "Developing";
-  if (score > 0) return "At Risk";
-  return "Not Yet Assessed";
-}
 
 export default function ClientReport({ data, selectedClient, setPage }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
@@ -20,6 +12,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
   const hasAssessment = answers.some((q) => q.score > 0);
   const catScores = categoryScores(answers);
   const overall = hasAssessment ? calculateOverall(answers) : client.score;
+  const scoreTier = getScoreTier(overall);
   const strengths = topCategories(catScores, 3);
   const improvements = bottomCategories(catScores, 3);
   const findings = notableAnswers(answers, { maxScore: 3, limit: 8 });
@@ -155,7 +148,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
             <div className="report-score-block">
               <span className="report-score">{overall}</span>
               <span className="report-score-label">Overall Score / 100</span>
-              <span className={`report-band report-band-${scoreBand(overall).replace(/\s+/g, "-").toLowerCase()}`}>{scoreBand(overall)}</span>
+              <span className={`report-band report-band-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
             </div>
             <p className="report-summary-text">
               {hasAssessment ? (

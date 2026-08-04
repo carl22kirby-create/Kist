@@ -1,9 +1,32 @@
 import { categories } from "../data/seedData.js";
 import { buildAssessmentForClient } from "./assessmentEngine.js";
 
+// The Business Performance Score is the average of the eleven discipline
+// scores, each already normalised to /100 — never a flat average of every
+// individual scored item. That distinction matters: a flat average lets
+// one heavily-answered discipline (say, Strategy, fully scored) swamp a
+// barely-touched one (say, Risk and Compliance, one item scored), because
+// it weights by how many items happen to be answered rather than treating
+// every discipline as an equal contributor. Found and fixed 2026-08-04
+// while checking the app against KIST's own published methodology — a
+// test scenario (one discipline fully scored high, another with a single
+// low score) produced a 37-point gap between the two approaches.
+// Business Performance Score Tiers — matches the tiers published on
+// kistconsulting.co.uk exactly (Bronze/Developing below 60, Silver/Solid
+// 60-74, Gold/Excellent 75-89, Platinum/Exceptional 90-100). The website
+// described this tier system before the app had one; this closes that gap
+// rather than the other way round.
+export function getScoreTier(score) {
+  if (score >= 90) return { tier: "Platinum", label: "Exceptional", description: "A best in class organisation performing at the top of its field across virtually every discipline measured." };
+  if (score >= 75) return { tier: "Gold", label: "Excellent", description: "A strong, well managed business performing above the norm across most performance disciplines." };
+  if (score >= 60) return { tier: "Silver", label: "Solid", description: "A stable, reasonably well run business with specific disciplines holding back overall performance." };
+  return { tier: "Bronze", label: "Developing", description: "The fundamentals are in place, but significant gaps exist across several disciplines. A clear opportunity for structured improvement." };
+}
+
 export function calculateOverall(answers) {
-  const a = answers.filter((x) => x.score > 0);
-  return a.length ? Math.round((a.reduce((s, x) => s + x.score, 0) / (a.length * 5)) * 100) : 0;
+  const scoredCategories = categoryScores(answers).filter((c) => c.answered > 0);
+  if (scoredCategories.length === 0) return 0;
+  return Math.round(scoredCategories.reduce((sum, c) => sum + c.score, 0) / scoredCategories.length);
 }
 
 export function categoryScores(answers) {

@@ -528,6 +528,53 @@ generated and visually checked, confirming the layout holds up and that
 unfilled placeholders display correctly, before any of this was called
 done.
 
+## Score Integrity and Website Audit (v6.3.0)
+
+Checked kistconsulting.co.uk against the actual app, as requested — and
+found a real scoring bug in the process, not just copy that needed
+updating.
+
+**The bug**: `calculateOverall()` computed a flat average across every
+individually scored item, rather than averaging the eleven discipline
+scores. This meant a discipline with many answered items could swamp one
+with very few — a client could look far stronger overall than they
+actually were, just by how unevenly the assessment happened to be
+completed. A test scenario (one discipline fully scored at 5, another with
+only one item scored at 1) produced a **37 point gap** between the flat
+average and the correct methodology. Fixed to properly average the eleven
+already-normalised discipline scores, so each discipline is an equal
+contributor regardless of how many of its items got answered — this is
+also exactly what the website itself describes ("eleven discipline scores
+combine into one overall, independent Business Performance Score").
+
+**A second, related inconsistency**: the client report already had its
+own separate scoring band labels (Excellent / Stable / Developing / At
+Risk, with yet another set of thresholds) that matched neither the website
+nor the fix above. Replaced with a single Bronze / Silver / Gold /
+Platinum tier system, thresholds and labels taken directly from the
+website (`getScoreTier()` in `scoring.js`), now the one source of truth
+shown on both the client report and the presentation score slide.
+
+**Website claims checked against the app, with findings**:
+
+| Claim | Status |
+|---|---|
+| 250+ evidence points, 11 disciplines | Confirmed — 250 universal questions across exactly 11 categories |
+| Per-discipline point counts (23/23/23.../22/22/22) | Total matches (250) but the per-discipline breakdown differs slightly from the app's actual organic count in 8 of 11 disciplines — cosmetic, worth tidying on the website but not a functional issue |
+| Scoring methodology (score → discipline average → overall) | Was NOT matched by the app — now fixed, see above |
+| Score tiers (Bronze/Silver/Gold/Platinum) | Did not exist in the app — now added |
+| Business DNA / Performance Wheel visualisation | Confirmed — matches `BusinessDNA.jsx` |
+| 90 Day Progress Review, Annual Reassessment | Reasonably matched by Assessment Rounds, though the app doesn't enforce a strict 12 month cadence — it's a flexible save-a-round-and-compare mechanism, not a scheduled annual product |
+| **Cross-client benchmarking** ("scores are directly comparable across clients, industries") | **Not built.** No comparison against other clients or industry averages exists anywhere in the app. This is a real feature gap, not a small fix |
+| **Heat Maps, Business Benchmarks** (listed as dashboard features) | **Not built.** No heat map visualisation or benchmarking dashboard exists |
+| **"kept up to date on the KIST platform"** (implies client-facing access) | **Not built.** KIST One is entirely consultant-facing — there is no client login or client-visible portal of any kind |
+| "AI assisted alerts" (ongoing partnership section) | Partially matched — KIST Brain answers questions on demand; there's no proactive, automatic alerting system |
+
+The three bolded gaps (benchmarking, heat maps, client platform access) are
+genuinely separate projects, not something to bolt on alongside this fix —
+worth a deliberate decision about whether the website should be toned down
+to match what exists today, or whether these become real roadmap items.
+
 ## Architecture
 
 
