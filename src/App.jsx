@@ -18,6 +18,8 @@ import ClientReport from "./pages/ClientReport.jsx";
 import KistFlyer from "./pages/KistFlyer.jsx";
 import Presentation from "./pages/Presentation.jsx";
 import QuoteDocument from "./pages/QuoteDocument.jsx";
+import BookingConfirmationDocument from "./pages/BookingConfirmationDocument.jsx";
+import InvoiceDocument from "./pages/InvoiceDocument.jsx";
 import { checkSession, login, logout, fetchData, saveData, resetData as apiResetData } from "./api.js";
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -27,6 +29,8 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [selectedClient, setSelectedClient] = useState("c1");
   const [selectedQuote, setSelectedQuote] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [calendarAnchor, setCalendarAnchor] = useState("2026-07-06");
   const [data, setDataState] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -136,7 +140,7 @@ export default function App() {
     return <div className="app-loading">Loading KIST One…</div>;
   }
 
-  const props = { data, setData, page, setPage, selectedClient, setSelectedClient, selectedQuote, setSelectedQuote, calendarAnchor, setCalendarAnchor, resetData };
+  const props = { data, setData, page, setPage, selectedClient, setSelectedClient, selectedQuote, setSelectedQuote, selectedBooking, setSelectedBooking, selectedInvoice, setSelectedInvoice, calendarAnchor, setCalendarAnchor, resetData };
 
   if (page === "report") {
     return <ClientReport {...props} />;
@@ -152,6 +156,14 @@ export default function App() {
 
   if (page === "quote") {
     return <QuoteDocument {...props} />;
+  }
+
+  if (page === "booking") {
+    return <BookingConfirmationDocument {...props} />;
+  }
+
+  if (page === "invoice") {
+    return <InvoiceDocument {...props} />;
   }
 
   const pages = {

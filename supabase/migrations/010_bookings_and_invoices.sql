@@ -1,0 +1,35 @@
+-- Applied directly to the live kist-one Supabase project on 2026-08-04.
+--
+-- Adds Booking Confirmations and Invoices, both following the exact same
+-- audit-safe pattern established for Quotes: append-only, outside the
+-- general replace_full_data sync, freezing a business details snapshot
+-- at the moment of issue.
+--
+-- Booking Confirmations: booking_number_seq, booking_confirmations table,
+-- create_booking_confirmation(), get_booking_confirmations_for_client(),
+-- update_booking_confirmation_status(). References Terms and Conditions
+-- by name and effective date rather than reprinting the full ~31,000
+-- character document every time — these get generated far more often
+-- than quotes or invoices, and clause 2.2(d) already establishes that
+-- booking or permitting KIST to begin the Services forms the contract on
+-- the standard Terms regardless of whether they're reprinted in full here.
+--
+-- Invoices: invoice_number_seq, invoices table, invoice_payments table
+-- (a genuine append-only ledger — a payment once recorded is never edited
+-- or deleted, only ever added to), create_invoice_from_quote() (pulls
+-- line items and totals from an existing quote, applies an optional
+-- discount before VAT), create_standalone_invoice(), record_payment()
+-- (automatically transitions status to Partially Paid or Paid based on
+-- the running total against the invoice total), get_invoice_by_id() and
+-- get_invoices_for_client() (both compute amountPaid, amountOutstanding
+-- and isOverdue live from the payments table rather than storing them,
+-- so they can never drift out of sync with the actual payment history),
+-- update_invoice_status() (for manual overrides like Cancelled or
+-- Written Off).
+--
+-- Tested directly against the live database before any application code
+-- was written: quote-to-invoice creation with a discount applied before
+-- VAT (confirmed the arithmetic), two partial payments correctly summing
+-- and transitioning status Issued -> Partially Paid -> Paid, and an
+-- invoice with a past due date and no payment correctly flagged
+-- isOverdue. Full function bodies are on the live database.

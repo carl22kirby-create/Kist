@@ -435,3 +435,20 @@
 .presentation-tier-gold{background:rgba(246,196,0,.2);color:var(--gold)}
 .presentation-tier-silver{background:rgba(69,165,255,.2);color:var(--blue)}
 .presentation-tier-bronze{background:rgba(255,92,92,.2);color:#ff8a8a}
+
+/* --- Booking Confirmations and Invoices --- */
+.bookings-card{border-color:rgba(104,216,87,.4)}
+.invoices-card{border-color:rgba(246,196,0,.4)}
+.payment-form{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;display:grid;gap:10px}
+.payment-form input[type="text"],.payment-form > input{margin-top:4px}
+.invoice-overdue-text{color:#ff8a8a !important}
+
+/* --- Printable booking confirmation --- */
+.booking-confirmation-greeting{font-size:15px;color:#33405C;margin:20px 0}
+.booking-meta-grid{grid-template-columns:repeat(2,1fr) !important}
+.booking-footer-note{border-top:1px solid #E0E4EC;padding-top:14px}
+
+/* --- Printable invoice extras --- */
+.invoice-payments-section{margin:20px 0}
+.invoice-payments-section h4{color:#0B2A57;font-size:13px;text-transform:uppercase;margin-bottom:10px}
+.invoice-outstanding-line{color:#33405C;font-size:14px;margin-top:10px}

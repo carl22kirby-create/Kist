@@ -79,3 +79,56 @@ export function updateQuoteStatus(id, status) {
     body: JSON.stringify({ id, status })
   }).then(handle);
 }
+
+export function getBookingConfirmationsForClient(clientId) {
+  return fetch(`${BASE}/booking-confirmations?clientId=${encodeURIComponent(clientId)}`, { credentials: "include" }).then(handle);
+}
+
+export function createBookingConfirmation(booking) {
+  return fetch(`${BASE}/booking-confirmations`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(booking)
+  }).then(handle);
+}
+
+export function updateBookingConfirmationStatus(id, status) {
+  return fetch(`${BASE}/booking-confirmations`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status })
+  }).then(handle);
+}
+
+export function getInvoicesForClient(clientId) {
+  return fetch(`${BASE}/invoices?clientId=${encodeURIComponent(clientId)}`, { credentials: "include" }).then(handle);
+}
+
+export function createInvoice(invoice) {
+  return fetch(`${BASE}/invoices`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(invoice)
+  }).then(handle);
+}
+
+export function updateInvoiceStatus(id, status) {
+  return fetch(`${BASE}/invoices`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status })
+  }).then(handle);
+}
+
+export function recordPayment(payment) {
+  return fetch(`${BASE}/invoice-payments`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payment)
+  }).then(handle);
+}

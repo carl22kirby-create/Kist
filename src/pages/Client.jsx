@@ -5,9 +5,9 @@ import Toast from "../components/Toast.jsx";
 import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions, businessObjectiveOptions, conceptNames } from "../data/knowledgeBase.js";
 import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
 import { getClientAssessment, reviewHypothesis } from "../utils/scoring.js";
-import { getQuotesForClient, createQuote, updateQuoteStatus } from "../api.js";
+import { getQuotesForClient, createQuote, updateQuoteStatus, getBookingConfirmationsForClient, createBookingConfirmation, updateBookingConfirmationStatus, getInvoicesForClient, createInvoice, updateInvoiceStatus, recordPayment } from "../api.js";
 
-export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor, setSelectedQuote }) {
+export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor, setSelectedQuote, setSelectedBooking, setSelectedInvoice }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const [showBooking, setShowBooking] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -19,6 +19,14 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteForm, setQuoteForm] = useState(null);
   const [quotesError, setQuotesError] = useState("");
+  const [bookings, setBookings] = useState([]);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [bookingForm, setBookingForm] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState(null);
+  const [payingInvoiceId, setPayingInvoiceId] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({ amount: "", paymentDate: new Date().toISOString().slice(0, 10), method: "Bank transfer", note: "" });
   const [booking, setBooking] = useState({ date: "2026-07-08", start: "09:00", end: "10:00", type: "First Consultation", consultant: "Carl Kirby", location: client.address || "" });
   const profile = client.profile || { industry: "Other", capabilities: [], regulations: [], dependencies: {}, objectives: [], threeProblems: "", hypothesis: null };
   const activeModules = activeModulesForProfile(profile);
@@ -77,7 +85,54 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
 
   useEffect(() => {
     getQuotesForClient(client.id).then(setQuotes).catch((err) => setQuotesError(err.message));
+    getBookingConfirmationsForClient(client.id).then(setBookings).catch(() => {});
+    getInvoicesForClient(client.id).then(setInvoices).catch(() => {});
   }, [client.id]);
+
+  function startNewBooking() {
+    setBookingForm({
+      visitType: "First Consultation", visitDate: new Date().toISOString().slice(0, 10),
+      startTime: "09:00", endTime: "10:00", location: client.address || "", consultant: "Carl Kirby", attendees: "", notes: ""
+    });
+    setShowBookingForm(true);
+  }
+  function submitBooking() {
+    createBookingConfirmation({ clientId: client.id, ...bookingForm })
+      .then((created) => { setBookings([created, ...bookings]); setShowBookingForm(false); setToastMessage(`Booking ${created.bookingNumber} confirmed and filed`); })
+      .catch((err) => alert(err.message));
+  }
+  function setBookingStatus(id, status) {
+    updateBookingConfirmationStatus(id, status)
+      .then(() => setBookings(bookings.map((b) => b.id === id ? { ...b, status } : b)))
+      .catch((err) => alert(err.message));
+  }
+
+  function startInvoiceFromQuote(quote) {
+    const due = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    setInvoiceForm({ fromQuoteId: quote.id, quoteNumber: quote.quoteNumber, dueDate: due, discountAmount: 0, discountReason: "", notes: "" });
+    setShowInvoiceForm(true);
+  }
+  function submitInvoice() {
+    createInvoice(invoiceForm)
+      .then((created) => { setInvoices([created, ...invoices]); setShowInvoiceForm(false); setToastMessage(`Invoice ${created.invoiceNumber} created and filed`); })
+      .catch((err) => alert(err.message));
+  }
+  function setInvoiceStatusValue(id, status) {
+    updateInvoiceStatus(id, status)
+      .then((updated) => setInvoices(invoices.map((i) => i.id === id ? updated : i)))
+      .catch((err) => alert(err.message));
+  }
+  function submitPayment(invoiceId) {
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) { alert("Enter a payment amount greater than zero."); return; }
+    recordPayment({ invoiceId, amount: Number(paymentForm.amount), paymentDate: paymentForm.paymentDate, method: paymentForm.method, note: paymentForm.note })
+      .then((updated) => {
+        setInvoices(invoices.map((i) => i.id === invoiceId ? updated : i));
+        setPayingInvoiceId(null);
+        setPaymentForm({ amount: "", paymentDate: new Date().toISOString().slice(0, 10), method: "Bank transfer", note: "" });
+        setToastMessage("Payment recorded");
+      })
+      .catch((err) => alert(err.message));
+  }
 
   function startNewQuote() {
     const today = new Date().toISOString().slice(0, 10);
@@ -281,7 +336,132 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
                         <button className="secondary" onClick={() => setQuoteStatus(q.id, "Declined")}>Mark Declined</button>
                       </>
                     )}
+                    {q.status === "Accepted" && (
+                      <button className="primary" onClick={() => startInvoiceFromQuote(q)}>Create Invoice</button>
+                    )}
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card wide bookings-card">
+          <div className="card-head-row">
+            <h2><FileText size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Booking Confirmations</h2>
+            <button className="secondary edit-button" onClick={startNewBooking}><Plus size={14} /> New Confirmation</button>
+          </div>
+          <p className="muted">Kept as a permanent audit record, same as Quotes — never affected by a data reset.</p>
+
+          {showBookingForm && bookingForm && (
+            <div className="quote-form">
+              <div className="form-grid">
+                <label>Visit Type
+                  <select value={bookingForm.visitType} onChange={(e) => setBookingForm({ ...bookingForm, visitType: e.target.value })}>
+                    <option>First Consultation</option><option>Discovery Call</option><option>Business Assessment</option>
+                    <option>Site Visit</option><option>Report Review</option><option>90 Day Follow Up</option>
+                  </select>
+                </label>
+                <label>Date<input type="date" value={bookingForm.visitDate} onChange={(e) => setBookingForm({ ...bookingForm, visitDate: e.target.value })} /></label>
+                <label>Start<input type="time" value={bookingForm.startTime} onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })} /></label>
+                <label>End<input type="time" value={bookingForm.endTime} onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })} /></label>
+                <label>Location<input value={bookingForm.location} onChange={(e) => setBookingForm({ ...bookingForm, location: e.target.value })} /></label>
+                <label>Consultant<input value={bookingForm.consultant} onChange={(e) => setBookingForm({ ...bookingForm, consultant: e.target.value })} /></label>
+                <label>Attendees Expected<input value={bookingForm.attendees} onChange={(e) => setBookingForm({ ...bookingForm, attendees: e.target.value })} /></label>
+              </div>
+              <textarea placeholder="Notes (optional)" value={bookingForm.notes} onChange={(e) => setBookingForm({ ...bookingForm, notes: e.target.value })} />
+              <div className="edit-actions">
+                <button className="secondary" onClick={() => setShowBookingForm(false)}>Cancel</button>
+                <button className="primary" onClick={submitBooking}>Confirm Booking</button>
+              </div>
+            </div>
+          )}
+
+          {bookings.length === 0 ? (
+            <p className="muted-small">No booking confirmations issued yet.</p>
+          ) : (
+            <div className="quote-list">
+              {bookings.map((b) => (
+                <div className="quote-row" key={b.id}>
+                  <div>
+                    <strong>{b.bookingNumber}</strong>
+                    <span className="quote-row-meta">{b.visitDate} · {b.visitType} · {b.status}</span>
+                  </div>
+                  <div className="quote-row-actions">
+                    <button className="secondary" onClick={() => { setSelectedBooking(b); setPage("booking"); }}>View / Print</button>
+                    {b.status === "Confirmed" && (
+                      <>
+                        <button className="secondary" onClick={() => setBookingStatus(b.id, "Rescheduled")}>Mark Rescheduled</button>
+                        <button className="secondary" onClick={() => setBookingStatus(b.id, "Cancelled")}>Cancel</button>
+                        <button className="secondary" onClick={() => setBookingStatus(b.id, "Completed")}>Mark Completed</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card wide invoices-card">
+          <div className="card-head-row">
+            <h2><FileText size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Invoices</h2>
+          </div>
+          <p className="muted">Create an invoice from an Accepted quote above, or track payments on an existing invoice below. Kept as a permanent audit record, never affected by a data reset.</p>
+
+          {showInvoiceForm && invoiceForm && (
+            <div className="quote-form">
+              <p className="muted-small">Creating invoice from quote {invoiceForm.quoteNumber}.</p>
+              <div className="form-grid">
+                <label>Due Date<input type="date" value={invoiceForm.dueDate} onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })} /></label>
+                <label>Discount Amount (£)<input type="number" value={invoiceForm.discountAmount} onChange={(e) => setInvoiceForm({ ...invoiceForm, discountAmount: e.target.value })} /></label>
+                <label>Discount Reason<input value={invoiceForm.discountReason} onChange={(e) => setInvoiceForm({ ...invoiceForm, discountReason: e.target.value })} placeholder="e.g. Loyalty discount" /></label>
+              </div>
+              <textarea placeholder="Notes (optional)" value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} />
+              <div className="edit-actions">
+                <button className="secondary" onClick={() => setShowInvoiceForm(false)}>Cancel</button>
+                <button className="primary" onClick={submitInvoice}>Issue Invoice</button>
+              </div>
+            </div>
+          )}
+
+          {invoices.length === 0 ? (
+            <p className="muted-small">No invoices issued yet.</p>
+          ) : (
+            <div className="quote-list">
+              {invoices.map((inv) => (
+                <div className="quote-row" key={inv.id}>
+                  <div>
+                    <strong>{inv.invoiceNumber}</strong>
+                    <span className="quote-row-meta">
+                      Due {inv.dueDate} · £{Number(inv.total).toFixed(2)} · {inv.isOverdue ? "Overdue" : inv.status}
+                      {inv.amountOutstanding > 0 && inv.amountOutstanding < inv.total && ` · £${Number(inv.amountOutstanding).toFixed(2)} outstanding`}
+                    </span>
+                  </div>
+                  <div className="quote-row-actions">
+                    <button className="secondary" onClick={() => { setSelectedInvoice(inv); setPage("invoice"); }}>View / Print</button>
+                    {(inv.status === "Issued" || inv.status === "Partially Paid") && (
+                      <button className="primary" onClick={() => setPayingInvoiceId(payingInvoiceId === inv.id ? null : inv.id)}>Record Payment</button>
+                    )}
+                    {inv.status !== "Paid" && inv.status !== "Cancelled" && (
+                      <button className="secondary" onClick={() => setInvoiceStatusValue(inv.id, "Written Off")}>Write Off</button>
+                    )}
+                  </div>
+                  {payingInvoiceId === inv.id && (
+                    <div className="payment-form">
+                      <div className="form-grid">
+                        <label>Amount (£)<input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })} placeholder={`Outstanding: £${Number(inv.amountOutstanding).toFixed(2)}`} /></label>
+                        <label>Date<input type="date" value={paymentForm.paymentDate} onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })} /></label>
+                        <label>Method
+                          <select value={paymentForm.method} onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}>
+                            <option>Bank transfer</option><option>Card</option><option>Cash</option><option>Cheque</option><option>Other</option>
+                          </select>
+                        </label>
+                      </div>
+                      <input placeholder="Note (optional)" value={paymentForm.note} onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })} />
+                      <button className="primary" onClick={() => submitPayment(inv.id)}>Save Payment</button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

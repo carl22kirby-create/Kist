@@ -575,6 +575,46 @@ genuinely separate projects, not something to bolt on alongside this fix —
 worth a deliberate decision about whether the website should be toned down
 to match what exists today, or whether these become real roadmap items.
 
+## Booking Confirmations and Invoices (v6.4.0)
+
+Both follow the exact same audit-safe pattern established for Quotes:
+append-only records, kept entirely outside the general `replace_full_data`
+save mechanism, unaffected by Reset to Seed Data.
+
+**Booking Confirmations** get their own auto-numbering (`KIST-B-00001`
+style) and reference the Terms and Conditions by name and effective date
+rather than reprinting the full ~31,000 character document every time —
+these get generated far more often than quotes or invoices, and clause
+2.2(d) already establishes that booking or permitting KIST to begin the
+Services forms the contract on the standard Terms regardless of whether
+they're reprinted in full on the confirmation itself.
+
+**Invoices** can be created directly from an Accepted quote — appears as
+a "Create Invoice" button once a quote's status is set to Accepted. Carries
+over the quote's line items and totals, with an optional discount applied
+*before* VAT (tested: £2500 minus a £250 discount gives £2250, +20% VAT
+gives £2700 — confirmed against the live database, not just read from the
+SQL).
+
+**Payments** are a genuine append-only ledger — a payment, once recorded,
+is never edited or deleted, only ever added to. Recording a payment
+automatically transitions invoice status between Issued, Partially Paid
+and Paid based on the running total against the invoice total, so the
+consultant records what actually happened and the status simply reflects
+reality rather than needing a separate manual step. An Overdue flag is
+computed live from today's date against the due date every time an
+invoice is fetched, rather than stored — so it can never quietly drift out
+of sync the way a stored flag could if a due date were ever edited after
+the fact.
+
+**Tested directly against the live database before any application code
+was written**: the discount-before-VAT arithmetic, two partial payments
+correctly summing and transitioning status through all three states in
+order, and an invoice with a past due date and no payment correctly
+flagged as overdue. I also specifically checked that a real quote the
+client had created independently since the previous release survived all
+of this testing completely untouched.
+
 ## Architecture
 
 
