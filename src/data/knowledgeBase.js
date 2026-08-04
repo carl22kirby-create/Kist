@@ -732,7 +732,20 @@ export const conceptNames = knowledgeBase.map((k) => k.concept.name);
 // Controlled lists used to drive the Business Profile step in Client
 // Onboarding. These are the entry points into the tag space — selecting an
 // industry, capability or regulation just adds that name as an active tag.
-export const industryOptions = ["Logistics", "Manufacturing", "Retail", "Hospitality", "Professional Services", "Other"];
+// The single source of truth for a client's industry — used both for
+// display and for matching Industry-tagged concepts. Previously there were
+// two separate industry fields (a free-text display label and this
+// controlled list), which could silently disagree with each other. Only
+// the first five have dedicated Knowledge Base content today; the rest
+// behave like "Other" until industry-specific modules are written for
+// them, same honest pattern as everywhere else in this library.
+export const industryOptions = [
+  "Logistics", "Manufacturing", "Retail", "Hospitality", "Professional Services",
+  "Construction", "Healthcare", "Education", "Technology and IT", "Agriculture",
+  "Financial Services", "Real Estate", "Automotive", "Energy and Utilities",
+  "Creative and Media", "Non-Profit and Charity", "Wholesale and Distribution",
+  "Leisure and Recreation", "Public Sector", "Other"
+];
 export const capabilityOptions = [
   "Warehouse", "Fleet Management", "Field Service", "Manufacturing", "Customer Support",
   "Call Centre", "Sales Team", "Project Delivery", "Procurement", "Exporting", "Importing",

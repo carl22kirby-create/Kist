@@ -6,8 +6,8 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
   const [form, setForm] = useState({
     objectives: [], threeProblems: "",
     hypothesisStatement: "", hypothesisTargets: [],
-    name: "", industry: "", size: "", turnover: "", website: "", address: "",
-    profileIndustry: "Other", capabilities: [], regulations: [],
+    name: "", industry: "Other", size: "", turnover: "", website: "", address: "",
+    capabilities: [], regulations: [],
     dependencies: Object.fromEntries(dependencyQuestions.map((d) => [d.field, null])),
     contactName: "", contactRole: "Managing Director", email: "", phone: "",
     tags: "", notes: "", scheduleConsultation: true,
@@ -25,12 +25,12 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
     if (!form.name.trim()) { alert("Please enter a company name."); setStep(3); return; }
     const clientId = "c" + Date.now();
     const client = {
-      id: clientId, name: form.name, industry: form.industry || "Not set", size: form.size,
+      id: clientId, name: form.name, industry: form.industry, size: form.size,
       turnover: form.turnover, website: form.website, address: form.address, score: 0, previous: 0,
       health: "New", status: "Prospect", tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      notes: form.notes,
+      notes: form.notes, evidenceFiles: [],
       profile: {
-        industry: form.profileIndustry, capabilities: form.capabilities, regulations: form.regulations,
+        industry: form.industry, capabilities: form.capabilities, regulations: form.regulations,
         dependencies: form.dependencies, objectives: form.objectives, threeProblems: form.threeProblems,
         hypothesis: form.hypothesisStatement ? { statement: form.hypothesisStatement, targetConcepts: form.hypothesisTargets, formedDate: new Date().toISOString().slice(0, 10) } : null
       },
@@ -95,7 +95,11 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
           <h3>Company Details</h3>
           <div className="form-grid">
             <input placeholder="Company name" value={form.name} onChange={(e) => update("name", e.target.value)} />
-            <input placeholder="Industry (display label)" value={form.industry} onChange={(e) => update("industry", e.target.value)} />
+            <label>Industry
+              <select value={form.industry} onChange={(e) => update("industry", e.target.value)}>
+                {industryOptions.map((i) => <option key={i}>{i}</option>)}
+              </select>
+            </label>
             <input placeholder="Company size" value={form.size} onChange={(e) => update("size", e.target.value)} />
             <input placeholder="Turnover" value={form.turnover} onChange={(e) => update("turnover", e.target.value)} />
             <input placeholder="Website" value={form.website} onChange={(e) => update("website", e.target.value)} />
@@ -107,11 +111,7 @@ export default function ClientOnboarding({ data, setData, setPage, setSelectedCl
         <div>
           <h3>Business Profile</h3>
           <p className="muted">This determines which assessment items apply — the client only sees indicators relevant to how their business actually operates. Their stated objectives above decide what's prioritised within that.</p>
-          <label>Primary Industry Module
-            <select value={form.profileIndustry} onChange={(e) => update("profileIndustry", e.target.value)}>
-              {industryOptions.map((i) => <option key={i}>{i}</option>)}
-            </select>
-          </label>
+          <p className="muted">Industry: <strong className="gold">{form.industry}</strong> (set on the Company Details step)</p>
           <h4 className="profile-subhead">Capabilities</h4>
           <div className="checklist">
             {capabilityOptions.map((cap) => (

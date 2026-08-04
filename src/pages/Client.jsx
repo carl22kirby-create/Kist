@@ -43,7 +43,7 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
 
   function startEditingDetails() {
     setDetailsForm({
-      name: client.name, industry: client.industry || "", size: client.size || "", turnover: client.turnover || "",
+      name: client.name, industry: profile.industry || "Other", size: client.size || "", turnover: client.turnover || "",
       website: client.website || "", address: client.address || "", status: client.status || "Active",
       notes: client.notes || "", tags: (client.tags || []).join(", ")
     });
@@ -58,7 +58,8 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
         name: detailsForm.name.trim(), industry: detailsForm.industry, size: detailsForm.size,
         turnover: detailsForm.turnover, website: detailsForm.website, address: detailsForm.address,
         status: detailsForm.status, notes: detailsForm.notes,
-        tags: detailsForm.tags.split(",").map((t) => t.trim()).filter(Boolean)
+        tags: detailsForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        profile: { ...(c.profile || {}), industry: detailsForm.industry }
       } : c)
     });
     setEditingDetails(false);
@@ -103,7 +104,11 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
             <div className="edit-details-form">
               <div className="form-grid">
                 <label>Company Name<input value={detailsForm.name} onChange={(e) => setDetailsForm({ ...detailsForm, name: e.target.value })} /></label>
-                <label>Industry (display label)<input value={detailsForm.industry} onChange={(e) => setDetailsForm({ ...detailsForm, industry: e.target.value })} /></label>
+                <label>Industry
+                  <select value={detailsForm.industry} onChange={(e) => setDetailsForm({ ...detailsForm, industry: e.target.value })}>
+                    {industryOptions.map((i) => <option key={i}>{i}</option>)}
+                  </select>
+                </label>
                 <label>Size<input value={detailsForm.size} onChange={(e) => setDetailsForm({ ...detailsForm, size: e.target.value })} /></label>
                 <label>Turnover<input value={detailsForm.turnover} onChange={(e) => setDetailsForm({ ...detailsForm, turnover: e.target.value })} /></label>
                 <label>Website<input value={detailsForm.website} onChange={(e) => setDetailsForm({ ...detailsForm, website: e.target.value })} /></label>
@@ -200,11 +205,7 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
           <button className="secondary" onClick={() => setShowProfile(!showProfile)}>{showProfile ? "Hide" : "Edit"} Business Profile</button>
           {showProfile && (
             <div className="profile-editor">
-              <label>Primary Industry Module
-                <select value={profile.industry || "Other"} onChange={(e) => updateProfile({ ...profile, industry: e.target.value })}>
-                  {industryOptions.map((i) => <option key={i}>{i}</option>)}
-                </select>
-              </label>
+              <p className="muted">Industry: <strong className="gold">{profile.industry || "Other"}</strong> — change this on Client Overview → Edit, not here, so it can never drift out of sync.</p>
               <h4 className="profile-subhead">Capabilities</h4>
               <div className="checklist">
                 {capabilityOptions.map((cap) => (

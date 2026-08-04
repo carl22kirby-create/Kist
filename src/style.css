@@ -300,3 +300,69 @@
 .flyer-list li{margin-bottom:8px}
 .flyer-footer{border-top:1px solid #E0E4EC;padding-top:14px;color:#8a94a8;font-size:11px;text-align:center}
 @media(max-width:760px){.flyer-steps{grid-template-columns:1fr}}
+
+/* --- Evidence Uploader (photos and documents) --- */
+.evidence-uploader{margin:14px 0}
+.evidence-file-input{display:none}
+.evidence-upload-button{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.evidence-error{color:#ff8a8a;font-size:13px;margin:8px 0}
+.evidence-file-list{display:grid;gap:12px;margin-top:16px}
+.evidence-file-card{display:grid;grid-template-columns:90px 1fr auto;gap:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:12px;padding:14px;align-items:start}
+.evidence-thumb{width:90px;height:90px;object-fit:cover;border-radius:8px;background:rgba(255,255,255,.05)}
+.evidence-thumb-doc{display:grid;place-items:center;color:var(--muted)}
+.evidence-file-details{display:grid;gap:8px;min-width:0}
+.evidence-file-name{color:var(--gold);font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evidence-file-details textarea{min-height:50px;margin:0}
+.evidence-include-row{margin:0;padding:8px 10px}
+.evidence-remove-button{border:1px solid rgba(255,92,92,.4);background:rgba(255,92,92,.1);color:#ff8a8a;border-radius:8px;padding:8px;height:fit-content}
+
+/* --- 90 Day Roadmap builder --- */
+.roadmap-columns{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}
+.roadmap-column{border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:12px;padding:14px}
+.roadmap-column h4{margin:0 0 12px;color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+.roadmap-item{border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:8px;padding:10px;margin-bottom:10px}
+.roadmap-item strong{display:block;color:white;font-size:13px;margin-bottom:4px}
+.roadmap-item p{margin:0 0 6px;color:var(--muted);font-size:12px}
+.roadmap-owner{color:var(--gold);font-size:11px;text-transform:uppercase}
+.finish-save-button{width:100%;justify-content:center;padding:16px}
+
+/* --- Full-screen presentation --- */
+.presentation-shell{min-height:100vh;background:radial-gradient(circle at 95% 0%,rgba(246,196,0,.22),transparent 30%),linear-gradient(135deg,#020816,#04142F 45%,#020816);color:white;display:flex;flex-direction:column}
+.presentation-controls{display:flex;justify-content:space-between;align-items:center;padding:20px 30px;gap:14px}
+.presentation-slide-counter{color:var(--muted);font-size:13px}
+.presentation-slide{flex:1;display:grid;place-items:center;padding:40px}
+.presentation-content{max-width:900px;text-align:center}
+.presentation-title-slide h1{font-size:56px;margin:20px 0 10px}
+.presentation-title-slide p{color:var(--muted);font-size:20px}
+.presentation-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:30px}
+.presentation-brand span{color:var(--gold);font-size:20px;letter-spacing:3px;font-weight:800}
+.presentation-content h2{font-size:36px;margin:0 0 24px}
+.presentation-chip-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:24px}
+.presentation-chip{background:rgba(246,196,0,.15);border:1px solid rgba(246,196,0,.4);color:var(--gold);padding:10px 18px;border-radius:24px;font-size:15px;font-weight:700}
+.presentation-quote{font-size:22px;font-style:italic;color:white;max-width:700px;margin:0 auto}
+.presentation-hypothesis-badge{display:inline-block;margin-top:24px;padding:10px 22px;border-radius:24px;font-size:14px;font-weight:800;text-transform:uppercase}
+.presentation-hypothesis-supported{background:rgba(104,216,87,.18);color:var(--green)}
+.presentation-hypothesis-partially-supported{background:rgba(246,196,0,.18);color:var(--gold)}
+.presentation-hypothesis-not-supported{background:rgba(255,92,92,.18);color:#ff8a8a}
+.presentation-score-slide .presentation-score{display:block;font-size:120px;color:var(--gold);font-weight:900;line-height:1}
+.presentation-score-label{display:block;color:var(--muted);font-size:20px;margin-bottom:30px}
+.presentation-score-slide .dna svg{max-width:400px}
+.presentation-footnote{color:var(--muted);font-size:15px;margin-top:24px}
+.presentation-two-col{display:grid;grid-template-columns:1fr 1fr;gap:50px;text-align:left}
+.presentation-two-col h3{color:var(--gold);font-size:20px}
+.presentation-two-col ul{font-size:18px;line-height:2}
+.presentation-roadmap-slide h2{margin-bottom:34px}
+.presentation-roadmap-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;text-align:left}
+.presentation-roadmap-cols h4{color:var(--gold);font-size:16px;text-transform:uppercase;margin-bottom:12px}
+.presentation-roadmap-cols ul{font-size:15px;line-height:1.9;color:white}
+.presentation-muted{color:var(--muted)}
+.presentation-nav{display:flex;justify-content:space-between;padding:20px 30px}
+@media(max-width:900px){.roadmap-columns{grid-template-columns:1fr 1fr}.presentation-two-col,.presentation-roadmap-cols{grid-template-columns:1fr}.presentation-score-slide .presentation-score{font-size:80px}.presentation-title-slide h1{font-size:36px}}
+
+/* --- Report: site evidence photos --- */
+.report-evidence-section{border:1px solid #D7DEEA;border-radius:8px;padding:16px}
+.report-photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.report-photo-card{border:1px solid #E0E4EC;border-radius:8px;overflow:hidden;background:#F7F8FB}
+.report-photo-card img{width:100%;height:200px;object-fit:cover;display:block}
+.report-photo-card p{margin:0;padding:10px 12px;color:#33405C;font-size:12.5px}
+@media(max-width:600px){.report-photo-grid{grid-template-columns:1fr}}

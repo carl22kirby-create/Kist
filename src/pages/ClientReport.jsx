@@ -24,6 +24,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
   const improvements = bottomCategories(catScores, 3);
   const findings = notableAnswers(answers, { maxScore: 3, limit: 8 });
   const escalations = getEscalations(answers);
+  const reportPhotos = (client.evidenceFiles || []).filter((f) => f.includeInReport && f.mimeType.startsWith("image/"));
   const selectedObjectives = client.profile?.objectives || [];
   const threeProblems = client.profile?.threeProblems || "";
   const objectiveFindings = getObjectiveFindings(answers, selectedObjectives, 10);
@@ -273,6 +274,20 @@ export default function ClientReport({ data, selectedClient, setPage }) {
                   ) : (
                     <p className="report-muted-small">No actions allocated.</p>
                   )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {reportPhotos.length > 0 && (
+          <section className="report-section report-evidence-section report-avoid-break">
+            <h2>Site Evidence</h2>
+            <div className="report-photo-grid">
+              {reportPhotos.map((photo) => (
+                <div className="report-photo-card" key={photo.id}>
+                  <img src={photo.url} alt={photo.caption || photo.fileName} />
+                  {photo.caption && <p>{photo.caption}</p>}
                 </div>
               ))}
             </div>

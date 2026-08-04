@@ -1,9 +1,9 @@
 -- Transactional wipe-and-rewrite of every table from one posted JSON blob.
 --
--- Updated 2026-08-03 to include the client "profile" JSONB column
--- (migration 005) and the "assessmentRounds" data written to the
--- assessment_rounds table (migration 006). This is the current live
--- version on Supabase.
+-- Updated 2026-08-04 to include the client "profile" JSONB column
+-- (migration 005), "assessmentRounds" data (migration 006), and
+-- "evidenceFiles" (migration 007). This is the current live version on
+-- Supabase.
 CREATE OR REPLACE FUNCTION replace_full_data(payload jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -30,13 +30,13 @@ BEGIN
 
   FOR c IN SELECT * FROM jsonb_array_elements(COALESCE(payload->'clients', '[]'::jsonb))
   LOOP
-    INSERT INTO clients (id, name, industry, size, turnover, website, address, score, previous, health, status, notes, profile)
+    INSERT INTO clients (id, name, industry, size, turnover, website, address, score, previous, health, status, notes, profile, evidence_files)
     VALUES (
       c->>'id', c->>'name', COALESCE(c->>'industry',''), COALESCE(c->>'size',''),
       COALESCE(c->>'turnover',''), COALESCE(c->>'website',''), COALESCE(c->>'address',''),
       COALESCE((c->>'score')::int, 0), COALESCE((c->>'previous')::int, 0),
       COALESCE(c->>'health',''), COALESCE(c->>'status',''), COALESCE(c->>'notes',''),
-      COALESCE(c->'profile', '{}'::jsonb)
+      COALESCE(c->'profile', '{}'::jsonb), COALESCE(c->'evidenceFiles', '[]'::jsonb)
     );
 
     IF c->'tags' IS NOT NULL THEN

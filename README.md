@@ -333,6 +333,51 @@ target BPI individually (all low = Supported, all high = Not Supported,
 mixed = Partially Supported) and re-ran all four states to confirm the
 fix before treating this as done.
 
+## Evidence, Roadmap and Follow-Up Release (v5.9.0)
+
+Answers several real gaps found by actually trying to use the tool.
+
+**Photo and document upload — real infrastructure, not a placeholder.**
+Added a private Supabase Storage bucket, an authenticated upload endpoint
+(`api/upload.js`, using the service role key server-side only, never
+exposed to the browser), and client-side image compression (long edge
+capped at 1600px, re-encoded as JPEG) so a full-resolution phone photo
+doesn't blow the 8MB bucket limit. Each uploaded file gets its own caption
+and an "include in report" toggle — flagged photos now actually appear in
+the printed client report. Available in both Business Walkthrough and
+Evidence Review.
+
+**Honest limitation on this one specifically**: I could not test the
+upload path end to end from here. The bucket, the database column, and the
+SQL round-trip are all verified directly against the live database. The
+actual upload API call needs the real service role key, which only exists
+in your Vercel environment — you'll be the first to try a real upload.
+
+**90 Day Roadmap** — automatically buckets every BPI that already has a
+completed improvement plan into Next 30 Days / 31-60 / 61-90 / Long Term,
+using the target date if one's set, otherwise priority. Worth being
+precise about what this is: deterministic aggregation of data you've
+already entered, not AI-generated analysis. It organises, it doesn't
+invent.
+
+**Real follow-up scheduling** — date, time, who, and visit type, creating
+an actual calendar entry rather than a note that goes nowhere.
+
+**Finish now genuinely saves** — a toast confirmation and a timeline entry
+marking the visit complete.
+
+**Presentation Mode rebuilt** as an actual full-screen slide deck (title,
+objectives, hypothesis, score, findings, roadmap), with arrow-key
+navigation and a real fullscreen API call — not the static single view it
+was before.
+
+**A real bug found and fixed**: two separate industry fields could
+silently disagree — a free-text display label and a separate controlled
+dropdown that actually drove question matching. Checking my own seed data
+while fixing this surfaced an actual live example: ABC Engineering was
+tagged "Engineering" for display but "Manufacturing" for matching. Now
+there's one field, one comprehensive ~20-option list, driving both.
+
 ## Architecture
 
 - **Frontend**: unchanged from the Railway version — same pages, same

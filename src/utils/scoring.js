@@ -215,6 +215,39 @@ export function getEscalations(answers) {
     .map((a) => ({ id: a.id, concept: a.concept, category: a.category, flags: a.escalationFlags, score: a.score, notes: a.notes }));
 }
 
+// 90 Day Roadmap — buckets every BPI that already has an improvement plan
+// into Next 30 Days / 31-60 Days / 61-90 Days / Long Term. This is
+// deterministic aggregation of data you've already entered (target date if
+// set, otherwise priority), not AI synthesis — it doesn't invent anything,
+// it just organises what's already there so the consultant isn't manually
+// re-sorting a long list by hand.
+export function buildRoadmap(answers) {
+  const items = answers.filter((a) => isImprovementPlanRequired(a) && a.improvementPlan?.recommendedActions?.trim());
+  const today = new Date();
+  function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) return null;
+    return Math.round((parsed - today) / (1000 * 60 * 60 * 24));
+  }
+  const buckets = { thirty: [], sixty: [], ninety: [], longTerm: [] };
+  for (const item of items) {
+    const days = daysUntil(item.improvementPlan.targetDate);
+    if (days !== null) {
+      if (days <= 30) buckets.thirty.push(item);
+      else if (days <= 60) buckets.sixty.push(item);
+      else if (days <= 90) buckets.ninety.push(item);
+      else buckets.longTerm.push(item);
+    } else {
+      const priority = item.improvementPlan.priority;
+      if (priority === "High") buckets.thirty.push(item);
+      else if (priority === "Medium") buckets.sixty.push(item);
+      else buckets.ninety.push(item);
+    }
+  }
+  return buckets;
+}
+
 // Objective Priority — how many of the client's stated Business Objectives
 // a given BPI actually influences. This changes prioritisation and report
 // framing only; it never changes which BPIs are included in the

@@ -1,10 +1,10 @@
 -- Reassembles all app data into the single JSON shape the frontend expects,
 -- in one round trip instead of a dozen separate queries per request.
 --
--- Updated 2026-08-03 to include the client "profile" JSONB column
--- (migration 005) and the "assessmentRounds" data from the
--- assessment_rounds table (migration 006). This is the current live
--- version on Supabase.
+-- Updated 2026-08-04 to include the client "profile" JSONB column
+-- (migration 005), "assessmentRounds" data (migration 006), and
+-- "evidenceFiles" (migration 007). This is the current live version on
+-- Supabase.
 CREATE OR REPLACE FUNCTION get_full_data()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -19,6 +19,7 @@ BEGIN
         'turnover', c.turnover, 'website', c.website, 'address', c.address,
         'score', c.score, 'previous', c.previous, 'health', c.health,
         'status', c.status, 'notes', c.notes, 'profile', COALESCE(c.profile, '{}'::jsonb),
+        'evidenceFiles', COALESCE(c.evidence_files, '[]'::jsonb),
         'tags', COALESCE((SELECT jsonb_agg(t.tag) FROM client_tags t WHERE t.client_id = c.id), '[]'::jsonb),
         'contacts', COALESCE((
           SELECT jsonb_agg(jsonb_build_object(
