@@ -5,6 +5,7 @@ async function handle(res) {
     const body = await res.json().catch(() => ({}));
     const err = new Error(body.error || `Request failed with status ${res.status}`);
     err.status = res.status;
+    err.code = body.code;
     throw err;
   }
   return res.json();
@@ -31,12 +32,12 @@ export function fetchData() {
   return fetch(`${BASE}/data`, { credentials: "include" }).then(handle);
 }
 
-export function saveData(data) {
+export function saveData(data, expectedVersion) {
   return fetch(`${BASE}/data`, {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify({ payload: data, expectedVersion })
   }).then(handle);
 }
 

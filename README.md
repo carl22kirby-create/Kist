@@ -446,6 +446,44 @@ Technically yes, with real caveats worth knowing before you do it:
   then set `GEMINI_API_KEY` to the relevant key in each business's own
   Vercel project.
 
+## Data Protection Release (v6.1.0)
+
+Addresses a genuine data loss risk, not a cosmetic bug.
+
+**The problem**: every save replaced the entire dataset with whatever was
+in the browser's memory at that moment, with no check on whether that
+memory was still current. If an old browser tab — left open from an
+earlier session, or from before a deploy — was still sitting there with
+older data loaded, any action in it that triggered a save would silently
+overwrite newer real data with that stale snapshot. No warning, no error,
+just quietly gone.
+
+**The fix**: every save now travels with the data version it was loaded
+from (`syncVersion`, tracked in a new `sync_state` table). The database
+checks this atomically before writing anything — `replace_full_data_if_version()`
+in `003_replace_full_data.sql` — and rejects the write outright if the
+version doesn't match what's actually live, rather than applying it. The
+frontend shows a clear banner when this happens and automatically reloads
+current data, rather than leaving the tab stuck trying to save into a wall.
+
+I tested this directly against the live database before writing any
+frontend code: confirmed a write with the correct version succeeds and
+bumps the version counter, then confirmed a second write using the old
+version number is rejected outright, with the data confirmed untouched
+afterward — not just assumed from reading the SQL.
+
+**Also fixed**: "Reset to Seed Data" had no confirmation at all — a single
+click, no warning, instant and total data loss. It now requires typing
+`RESET` into a text field before the button becomes clickable.
+
+**Worth knowing**: this protects against the *silent* version of the
+problem — an old tab overwriting newer work without anyone noticing. It
+doesn't (and can't) undo a deliberate reset, and it doesn't provide
+version history or undo for normal edits. If losing real client data
+becomes a recurring concern beyond this specific failure mode, the next
+layer would be point-in-time backups on the Supabase side, which is a
+dashboard setting worth turning on regardless.
+
 ## Architecture
 
 

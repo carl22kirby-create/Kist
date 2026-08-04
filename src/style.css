@@ -386,3 +386,14 @@
 .ai-error{display:flex;align-items:center;gap:8px;color:#ff8a8a;font-size:13px}
 .ai-input-row{display:flex;gap:10px;margin-top:16px}
 .ai-input-row input{flex:1}
+
+/* --- Data conflict protection --- */
+.sync-status.conflict{color:#ff8a8a;font-weight:700}
+.conflict-banner{background:#3a1a1a;border:1px solid rgba(255,92,92,.5);color:white;padding:14px 20px;border-radius:10px;margin-bottom:20px;font-size:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.conflict-banner strong{color:#ff8a8a}
+
+/* --- Reset confirmation guard --- */
+.reset-confirm-box{border:1px solid rgba(255,92,92,.4);background:rgba(255,92,92,.06);border-radius:12px;padding:18px;margin-top:14px}
+.reset-confirm-warning{color:#ff8a8a;font-size:14px;margin:0 0 14px}
+.reset-confirm-box label{display:grid;gap:8px;color:var(--muted);font-size:13px;margin-bottom:16px}
+.reset-confirm-actions{display:flex;gap:10px;justify-content:flex-end}

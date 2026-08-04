@@ -1,9 +1,12 @@
 -- Transactional wipe-and-rewrite of every table from one posted JSON blob.
 --
 -- Updated 2026-08-04 to include the client "profile" JSONB column
--- (migration 005), "assessmentRounds" data (migration 006), and
--- "evidenceFiles" (migration 007). This is the current live version on
--- Supabase.
+-- (migration 005), "assessmentRounds" data (migration 006),
+-- "evidenceFiles" (migration 007), and version incrementing on every
+-- write (migration 008) so stale saves from an old tab can be detected.
+-- This is the current live version on Supabase. See 008_sync_version.sql
+-- for replace_full_data_if_version(), the atomic check-then-write wrapper
+-- normal saves actually call.
 CREATE OR REPLACE FUNCTION replace_full_data(payload jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -111,6 +114,26 @@ BEGIN
     ON CONFLICT (id) DO UPDATE SET settings = excluded.settings;
   END IF;
 
+  UPDATE sync_state SET version = version + 1, updated_at = now() WHERE id = 1;
+
   RETURN get_full_data();
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION replace_full_data_if_version(payload jsonb, expected_version bigint)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  current_version bigint;
+BEGIN
+  SELECT version INTO current_version FROM sync_state WHERE id = 1;
+
+  IF current_version IS DISTINCT FROM expected_version THEN
+    RAISE EXCEPTION 'VERSION_CONFLICT: data has changed since it was loaded (expected %, current %)', expected_version, current_version
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  RETURN replace_full_data(payload);
 END;
 $$;

@@ -2,17 +2,22 @@
 -- in one round trip instead of a dozen separate queries per request.
 --
 -- Updated 2026-08-04 to include the client "profile" JSONB column
--- (migration 005), "assessmentRounds" data (migration 006), and
--- "evidenceFiles" (migration 007). This is the current live version on
--- Supabase.
+-- (migration 005), "assessmentRounds" data (migration 006),
+-- "evidenceFiles" (migration 007), and "syncVersion" (migration 008,
+-- read from the sync_state table) for stale-save conflict detection.
+-- This is the current live version on Supabase.
 CREATE OR REPLACE FUNCTION get_full_data()
 RETURNS jsonb
 LANGUAGE plpgsql
 AS $$
 DECLARE
   result jsonb;
+  current_version bigint;
 BEGIN
+  SELECT version INTO current_version FROM sync_state WHERE id = 1;
+
   SELECT jsonb_build_object(
+    'syncVersion', COALESCE(current_version, 0),
     'clients', COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
         'id', c.id, 'name', c.name, 'industry', c.industry, 'size', c.size,

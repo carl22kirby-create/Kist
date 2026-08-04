@@ -20,7 +20,8 @@ const STATUS_LABEL = {
   idle: "Connected",
   saving: "Saving…",
   saved: "All changes saved",
-  error: "Save failed — check backend"
+  error: "Save failed — check backend",
+  conflict: "Save blocked — data changed elsewhere"
 };
 
 export default function Sidebar({ page, setPage, saveStatus, onLogout }) {
@@ -42,7 +43,7 @@ export default function Sidebar({ page, setPage, saveStatus, onLogout }) {
       ))}
       <button className="logout-button" onClick={onLogout}><LogOut size={17} /> Log Out</button>
       <div className="version">
-        Version 6.0.0<br /><span>KIST Brain release</span>
+        Version 6.1.0<br /><span>Data protection release</span>
         {saveStatus && <div className={`sync-status ${saveStatus}`}>{STATUS_LABEL[saveStatus] || ""}</div>}
       </div>
     </aside>

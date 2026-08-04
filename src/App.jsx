@@ -28,8 +28,10 @@ export default function App() {
   const [calendarAnchor, setCalendarAnchor] = useState("2026-07-06");
   const [data, setDataState] = useState(null);
   const [loadError, setLoadError] = useState(null);
-  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error | conflict
+  const [conflictMessage, setConflictMessage] = useState("");
   const saveTimer = useRef(null);
+  const syncVersionRef = useRef(null);
 
   useEffect(() => {
     checkSession()
@@ -40,7 +42,10 @@ export default function App() {
   useEffect(() => {
     if (authState !== "in") return;
     fetchData()
-      .then((result) => setDataState(result))
+      .then((result) => {
+        syncVersionRef.current = result.syncVersion;
+        setDataState(result);
+      })
       .catch((err) => {
         if (err.status === 401) { setAuthState("out"); return; }
         setLoadError(err.message);
@@ -51,10 +56,25 @@ export default function App() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       setSaveStatus("saving");
-      saveData(next)
-        .then(() => setSaveStatus("saved"))
+      saveData(next, syncVersionRef.current)
+        .then((result) => {
+          syncVersionRef.current = result.syncVersion;
+          setSaveStatus("saved");
+        })
         .catch((err) => {
           if (err.status === 401) { setAuthState("out"); return; }
+          if (err.code === "VERSION_CONFLICT") {
+            setSaveStatus("conflict");
+            setConflictMessage(err.message);
+            // Reload the current live data rather than silently discarding
+            // it or leaving the tab stuck on a stale snapshot it can never
+            // successfully save again.
+            fetchData().then((result) => {
+              syncVersionRef.current = result.syncVersion;
+              setDataState(result);
+            }).catch(() => {});
+            return;
+          }
           setSaveStatus("error");
         });
     }, SAVE_DEBOUNCE_MS);
@@ -72,7 +92,11 @@ export default function App() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveStatus("saving");
     apiResetData()
-      .then((fresh) => { setDataState(fresh); setSaveStatus("saved"); })
+      .then((fresh) => {
+        syncVersionRef.current = fresh.syncVersion;
+        setDataState(fresh);
+        setSaveStatus("saved");
+      })
       .catch(() => setSaveStatus("error"));
   }
 
@@ -143,7 +167,15 @@ export default function App() {
   return (
     <div className="app">
       <Sidebar page={page} setPage={setPage} saveStatus={saveStatus} onLogout={handleLogout} />
-      <main className="main">{pages[page]}</main>
+      <main className="main">
+        {saveStatus === "conflict" && (
+          <div className="conflict-banner">
+            <strong>Save blocked to protect newer data.</strong> {conflictMessage} The page has reloaded the current data automatically — check your most recent change and redo it if needed.
+            <button className="secondary" onClick={() => setSaveStatus("idle")}>Dismiss</button>
+          </div>
+        )}
+        {pages[page]}
+      </main>
     </div>
   );
 }
