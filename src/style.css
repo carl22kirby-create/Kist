@@ -452,3 +452,5 @@
 .invoice-payments-section{margin:20px 0}
 .invoice-payments-section h4{color:#0B2A57;font-size:13px;text-transform:uppercase;margin-bottom:10px}
 .invoice-outstanding-line{color:#33405C;font-size:14px;margin-top:10px}
+.report-benchmark-line{margin:8px 0 0;color:#5A6478;font-size:12px;font-style:italic}
+.presentation-benchmark-line{color:var(--muted);font-size:13px;margin:4px 0 0}

@@ -341,6 +341,52 @@ export function getAllEscalations(data) {
   return results;
 }
 
+// Cross-client benchmarking — how a client's score compares to other
+// assessed clients. Deliberately built to be honest about sample size:
+// with only a handful of clients, an "average" isn't a meaningful industry
+// benchmark yet, so this always returns sampleSize alongside the numbers,
+// and callers should show that plainly rather than presenting a small
+// sample as if it were a mature statistical baseline. Computed entirely
+// from data already in memory, reusing the same categoryScores() and
+// calculateOverall() used everywhere else — never a separate, potentially
+// inconsistent calculation.
+export function computeBenchmark(data, excludeClientId, { industryOnly = false } = {}) {
+  const excludedClient = data.clients.find((c) => c.id === excludeClientId);
+  const others = data.clients.filter((c) => {
+    if (c.id === excludeClientId) return false;
+    if (industryOnly && excludedClient) return c.profile?.industry === excludedClient.profile?.industry;
+    return true;
+  });
+
+  const samples = [];
+  for (const client of others) {
+    const answers = getClientAssessment(data, client.id);
+    const overall = calculateOverall(answers);
+    if (overall > 0) {
+      samples.push({ overall, categories: categoryScores(answers) });
+    }
+  }
+
+  if (samples.length === 0) {
+    return { sampleSize: 0, averageOverall: null, averageByCategory: {} };
+  }
+
+  const averageOverall = Math.round(samples.reduce((sum, s) => sum + s.overall, 0) / samples.length);
+
+  const averageByCategory = {};
+  const categoryNames = samples[0].categories.map((c) => c.category);
+  for (const catName of categoryNames) {
+    const scoredSamples = samples
+      .map((s) => s.categories.find((c) => c.category === catName))
+      .filter((c) => c && c.answered > 0);
+    if (scoredSamples.length > 0) {
+      averageByCategory[catName] = Math.round(scoredSamples.reduce((sum, c) => sum + c.score, 0) / scoredSamples.length);
+    }
+  }
+
+  return { sampleSize: samples.length, averageOverall, averageByCategory };
+}
+
 // Every completed Improvement Plan automatically becomes a live Action —
 // entered once, on the assessment item itself, rather than duplicated by
 // hand into the Actions list. Re-saving is idempotent: this client's

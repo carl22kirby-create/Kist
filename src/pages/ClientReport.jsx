@@ -1,6 +1,6 @@
 import BusinessDNA from "../components/BusinessDNA.jsx";
 import {
-  getClientAssessment, categoryScores, calculateOverall, getScoreTier,
+  getClientAssessment, categoryScores, calculateOverall, getScoreTier, computeBenchmark,
   topCategories, bottomCategories, notableAnswers, getEscalations, getObjectiveFindings, reviewHypothesis
 } from "../utils/scoring.js";
 
@@ -13,6 +13,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
   const catScores = categoryScores(answers);
   const overall = hasAssessment ? calculateOverall(answers) : client.score;
   const scoreTier = getScoreTier(overall);
+  const benchmark = computeBenchmark(data, client.id);
   const strengths = topCategories(catScores, 3);
   const improvements = bottomCategories(catScores, 3);
   const findings = notableAnswers(answers, { maxScore: 3, limit: 8 });
@@ -149,6 +150,12 @@ export default function ClientReport({ data, selectedClient, setPage }) {
               <span className="report-score">{overall}</span>
               <span className="report-score-label">Overall Score / 100</span>
               <span className={`report-band report-band-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
+              {benchmark.sampleSize > 0 && (
+                <p className="report-benchmark-line">
+                  {overall > benchmark.averageOverall ? "Above" : overall < benchmark.averageOverall ? "Below" : "In line with"} the average of {benchmark.averageOverall}
+                  {" "}across {benchmark.sampleSize} other assessed client{benchmark.sampleSize === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
             <p className="report-summary-text">
               {hasAssessment ? (
