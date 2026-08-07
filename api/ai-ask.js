@@ -1,11 +1,26 @@
 import { supabase } from "../lib/supabase.js";
 import { requireAuth } from "../lib/cookies.js";
-import { buildEvidenceContext, buildSystemInstruction, buildGuidancePrompt, GUIDANCE_RESPONSE_SCHEMA, buildSuggestionPrompt, SUGGESTION_RESPONSE_SCHEMA } from "../lib/kistBrain.js";
+import { buildEvidenceContext, buildSystemInstruction, buildGuidancePrompt, GUIDANCE_RESPONSE_SCHEMA, buildSuggestionPrompt, SUGGESTION_RESPONSE_SCHEMA, buildImprovementPlanPrompt, IMPROVEMENT_PLAN_RESPONSE_SCHEMA } from "../lib/kistBrain.js";
 import { askGemini } from "../lib/gemini.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   if (!(await requireAuth(req, res, supabase))) return;
+
+  // ---- Draft an improvement plan for a scored BPI ----
+  if (req.body?.mode === "draft-improvement-plan") {
+    const { concept, question, category, score, notes, evidence } = req.body;
+    if (!concept || !question || score === undefined) {
+      return res.status(400).json({ error: "concept, question and score are required" });
+    }
+    try {
+      const prompt = buildImprovementPlanPrompt({ concept, question, category, score, notes, evidence });
+      const result = await askGemini(prompt, "Draft the improvement plan now, in the exact structure requested.", IMPROVEMENT_PLAN_RESPONSE_SCHEMA);
+      return res.status(200).json(result);
+    } catch (err) {
+      return res.status(502).json({ error: err.message });
+    }
+  }
 
   // ---- Suggest related answers from notes already written ----
   // Every suggestion is proposed only, never committed — the frontend is

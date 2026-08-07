@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { escalationFlagOptions } from "../data/knowledgeBase.js";
 import QuickScorePanel from "./QuickScorePanel.jsx";
 import EvidenceUploader from "./EvidenceUploader.jsx";
-import { generateGuidance, suggestRelatedAnswers } from "../api.js";
+import { generateGuidance, suggestRelatedAnswers, draftImprovementPlan } from "../api.js";
 import {
   categoryScores, calculateOverall, isItemComplete, isImprovementPlanRequired, isImprovementPlanComplete,
   saveAssessmentRound, getPreviousRoundAnswer, getLatestRound, getAssessmentStatus, getTrafficLight,
@@ -25,6 +25,8 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestError, setSuggestError] = useState("");
   const [suggestChecked, setSuggestChecked] = useState(null);
+  const [draftingPlan, setDraftingPlan] = useState(false);
+  const [draftPlanError, setDraftPlanError] = useState("");
   const [showTimeline, setShowTimeline] = useState(false);
   const [quickScoreMode, setQuickScoreMode] = useState(false);
   const [quickScorePriorityOnly, setQuickScorePriorityOnly] = useState(false);
@@ -89,6 +91,33 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
 
   function dismissSuggestion(questionId) {
     setSuggestions((prev) => prev.filter((s) => s.questionId !== questionId));
+  }
+
+  // Populates the plan's text fields directly rather than requiring a
+  // separate accept step per field — every field stays fully editable
+  // afterward, and there's no discrete evidence claim being committed the
+  // way a BPI score is, so a draft to review and refine is the right
+  // shape here, not a suggestion queue.
+  function handleDraftImprovementPlan() {
+    setDraftingPlan(true);
+    setDraftPlanError("");
+    draftImprovementPlan(q)
+      .then((drafted) => {
+        update(q.id, {
+          improvementPlan: {
+            ...q.improvementPlan,
+            required: drafted.required,
+            expectedOutcome: drafted.expectedOutcome,
+            recommendedActions: drafted.recommendedActions,
+            businessImpact: drafted.businessImpact,
+            successMeasure: drafted.successMeasure,
+            consultantRecommendation: drafted.consultantRecommendation,
+            priority: drafted.suggestedPriority
+          }
+        });
+      })
+      .catch((err) => setDraftPlanError(err.message))
+      .finally(() => setDraftingPlan(false));
   }
   const objectivePriority = getObjectivePriority(q, selectedObjectives);
   const priorityUnscored = selectedObjectives.length > 0
@@ -518,6 +547,11 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
         {isImprovementPlanRequired(q) && (
           <div className="improvement-plan-box">
             <h4 className="section-heading">Improvement Plan (required for a score below 4)</h4>
+            <button className="guidance-toggle suggest-related-button" onClick={handleDraftImprovementPlan} disabled={draftingPlan}>
+              {draftingPlan ? "Drafting with KIST Brain..." : "Draft This Plan with KIST Brain"}
+            </button>
+            <p className="muted-small">Drafts from the score and notes already entered above — review and edit every field before moving on, the same as you would a colleague's first pass.</p>
+            {draftPlanError && <p className="ai-error">Couldn't draft a plan: {draftPlanError}</p>}
             <textarea placeholder="Improvement required" value={q.improvementPlan?.required || ""} onChange={(e) => updateNested(q.id, "improvementPlan", "required", e.target.value)} />
             <textarea placeholder="Expected outcome" value={q.improvementPlan?.expectedOutcome || ""} onChange={(e) => updateNested(q.id, "improvementPlan", "expectedOutcome", e.target.value)} />
             <textarea placeholder="Recommended actions" value={q.improvementPlan?.recommendedActions || ""} onChange={(e) => updateNested(q.id, "improvementPlan", "recommendedActions", e.target.value)} />

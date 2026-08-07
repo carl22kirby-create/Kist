@@ -133,6 +133,15 @@ export function recordPayment(payment) {
   }).then(handle);
 }
 
+export function draftImprovementPlan(item) {
+  return fetch(`${BASE}/ai-ask`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "draft-improvement-plan", concept: item.concept, question: item.question, category: item.category, score: item.score, notes: item.notes, evidence: item.evidence })
+  }).then(handle);
+}
+
 export function suggestRelatedAnswers({ sourceConcept, sourceNotes, sourceEvidence, candidateQuestions }) {
   return fetch(`${BASE}/ai-ask`, {
     method: "POST",
