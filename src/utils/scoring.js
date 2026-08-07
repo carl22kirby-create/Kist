@@ -341,6 +341,33 @@ export function getAllEscalations(data) {
   return results;
 }
 
+// The single source of truth for a client's Business Performance Score.
+// Every screen that shows a score — Dashboard, Clients list, Report,
+// Presentation — must call this rather than reading a stored field or
+// computing it independently. There is deliberately no stored/editable
+// "score" field on a client used for display anywhere in this app: the
+// score is always a live computation from actual recorded assessment
+// answers, so it can never silently drift out of sync with itself.
+//
+// previousOverall comes from the most recent saved Assessment Round
+// snapshot, also run through the same calculation — never a separately
+// stored number either.
+export function getClientScoreSummary(data, clientId) {
+  const answers = getClientAssessment(data, clientId);
+  const hasAssessment = answers.some((a) => a.score > 0);
+  const overall = hasAssessment ? calculateOverall(answers) : null;
+  const tier = overall != null ? getScoreTier(overall) : null;
+
+  const latestRound = getLatestRound(data, clientId);
+  let previousOverall = null;
+  if (latestRound) {
+    const roundHadScores = latestRound.snapshot.some((a) => a.score > 0);
+    if (roundHadScores) previousOverall = calculateOverall(latestRound.snapshot);
+  }
+
+  return { hasAssessment, overall, tier, previousOverall };
+}
+
 // Cross-client benchmarking — how a client's score compares to other
 // assessed clients. Deliberately built to be honest about sample size:
 // with only a handful of clients, an "average" isn't a meaningful industry

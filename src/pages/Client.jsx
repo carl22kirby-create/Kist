@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Tag, Mail, Phone, Layers, Target, FlaskConical, Pencil, FileText, Plus, Trash2 } from "lucide-react";
+import { Tag, Mail, Phone, Layers, Target, FlaskConical, Pencil, FileText, Plus, Trash2, CalendarClock } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
 import Toast from "../components/Toast.jsx";
 import { industryOptions, capabilityOptions, regulatoryOptions, dependencyQuestions, businessObjectiveOptions, conceptNames } from "../data/knowledgeBase.js";
 import { activeModulesForProfile, activeExclusionsForProfile } from "../utils/assessmentEngine.js";
-import { getClientAssessment, reviewHypothesis } from "../utils/scoring.js";
+import { getClientAssessment, reviewHypothesis, getClientScoreSummary, getLatestRound, calculateOverall } from "../utils/scoring.js";
 import { getQuotesForClient, createQuote, updateQuoteStatus, getBookingConfirmationsForClient, createBookingConfirmation, updateBookingConfirmationStatus, getInvoicesForClient, createInvoice, updateInvoiceStatus, recordPayment } from "../api.js";
 
 export default function Client({ data, setData, selectedClient, setPage, setCalendarAnchor, setSelectedQuote, setSelectedBooking, setSelectedInvoice }) {
@@ -15,6 +15,10 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   const [editingDetails, setEditingDetails] = useState(false);
   const [detailsForm, setDetailsForm] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
+  const [checkinBaseline, setCheckinBaseline] = useState("");
+  const [editingContacts, setEditingContacts] = useState(false);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [documentSearch, setDocumentSearch] = useState("");
   const [quotes, setQuotes] = useState([]);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteForm, setQuoteForm] = useState(null);
@@ -33,6 +37,81 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   const activeExclusions = activeExclusionsForProfile(profile);
   const assessmentAnswers = getClientAssessment(data, client.id);
   const hypothesisReview = reviewHypothesis(assessmentAnswers, profile.hypothesis);
+  const scoreSummary = getClientScoreSummary(data, client.id);
+  const assessmentRounds = (data.assessmentRounds && data.assessmentRounds[client.id]) || [];
+
+  // A single, searchable view across everything that's genuinely a
+  // document for this client — quotes, invoices, booking confirmations
+  // and evidence files — rather than four separate lists a consultant has
+  // to check one at a time. Each source already exists and is already
+  // fetched; this only ever combines and filters, it doesn't duplicate
+  // any of it.
+  const allDocuments = [
+    ...quotes.map((q) => ({ id: q.id, kind: "Quote", label: q.quoteNumber, date: q.issuedDate, status: q.status, search: `${q.quoteNumber} ${q.status} ${q.servicesDescription || ""}`.toLowerCase(), onClick: () => { setSelectedQuote(q); setPage("quote"); } })),
+    ...invoices.map((i) => ({ id: i.id, kind: "Invoice", label: i.invoiceNumber, date: i.issuedDate, status: i.isOverdue ? "Overdue" : i.status, search: `${i.invoiceNumber} ${i.status} ${i.servicesDescription || ""}`.toLowerCase(), onClick: () => { setSelectedInvoice(i); setPage("invoice"); } })),
+    ...bookings.map((b) => ({ id: b.id, kind: "Booking Confirmation", label: b.bookingNumber, date: b.visitDate, status: b.status, search: `${b.bookingNumber} ${b.visitType} ${b.status}`.toLowerCase(), onClick: () => { setSelectedBooking(b); setPage("booking"); } })),
+    ...(client.evidenceFiles || []).map((f) => ({ id: f.id, kind: "Evidence File", label: f.fileName, date: f.uploadedAt ? f.uploadedAt.slice(0, 10) : null, status: f.stage, search: `${f.fileName} ${f.caption || ""} ${f.stage}`.toLowerCase(), onClick: null }))
+  ]
+    .filter((doc) => !documentSearch || doc.search.includes(documentSearch.toLowerCase()))
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const latestRound = getLatestRound(data, client.id);
+
+  // Defaults the reminder baseline to this client's most recent Assessment
+  // or Report timeline entry, since that's genuinely when the "9 month
+  // plan" this cadence tracks against was actually formed — falls back to
+  // today only if no such entry exists yet.
+  const lastAssessmentEntry = [...(client.timeline || [])]
+    .filter((t) => t.type === "Assessment" || t.type === "Report")
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const defaultCheckinBaseline = lastAssessmentEntry?.date || new Date().toISOString().slice(0, 10);
+  const existingCheckins = data.schedule.filter((s) => s.clientId === client.id && s.type?.includes("Month Check-in"));
+
+  function addMonths(dateStr, months) {
+    const d = new Date(dateStr + "T00:00:00Z");
+    const day = d.getUTCDate();
+    d.setUTCMonth(d.getUTCMonth() + months);
+    if (d.getUTCDate() !== day) d.setUTCDate(0); // clamp short months (e.g. 31 Jan + 1mo) to the real month-end
+    return d.toISOString().slice(0, 10);
+  }
+
+  function scheduleCheckins() {
+    const baseline = checkinBaseline || defaultCheckinBaseline;
+    if (existingCheckins.length > 0 && !confirm(`${client.name} already has ${existingCheckins.length} check-in${existingCheckins.length === 1 ? "" : "s"} scheduled. Add three more anyway?`)) {
+      return;
+    }
+    const points = [["3 Month Check-in", 3], ["6 Month Check-in", 6], ["9 Month Check-in", 9]];
+    const newEntries = points.map(([label, months]) => ({
+      id: "s" + Date.now() + "-" + months, date: addMonths(baseline, months), start: "10:00", end: "10:30",
+      clientId: client.id, client: client.name, type: label, consultant: "Carl Kirby",
+      location: "Phone / video call", status: "Scheduled", colour: "blue"
+    }));
+    const timelineItem = { id: "t" + Date.now(), date: new Date().toISOString().slice(0, 10), type: "Calendar", title: "3, 6 and 9 month check-ins scheduled" };
+    setData({
+      ...data,
+      schedule: [...newEntries, ...data.schedule],
+      clients: data.clients.map((c) => c.id === client.id ? { ...c, timeline: [timelineItem, ...(c.timeline || [])] } : c)
+    });
+    setToastMessage(`Check-ins scheduled for ${newEntries.map((e) => e.date).join(", ")}`);
+  }
+
+  function addContact() {
+    const newContact = { id: "p" + Date.now(), name: "", role: "", email: "", phone: "", primary: (client.contacts || []).length === 0 };
+    setData({ ...data, clients: data.clients.map((c) => c.id === client.id ? { ...c, contacts: [...(c.contacts || []), newContact] } : c) });
+    setEditingContacts(true);
+  }
+  function updateContact(id, updates) {
+    setData((current) => ({
+      ...current,
+      clients: current.clients.map((c) => c.id === client.id ? { ...c, contacts: (c.contacts || []).map((p) => p.id === id ? { ...p, ...updates } : p) } : c)
+    }));
+  }
+  function removeContact(id) {
+    if (!confirm("Remove this contact?")) return;
+    setData((current) => ({
+      ...current,
+      clients: current.clients.map((c) => c.id === client.id ? { ...c, contacts: (c.contacts || []).filter((p) => p.id !== id) } : c)
+    }));
+  }
 
   function updateProfile(next) {
     setData({ ...data, clients: data.clients.map((c) => c.id === client.id ? { ...c, profile: next } : c) });
@@ -84,9 +163,12 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
   }
 
   useEffect(() => {
-    getQuotesForClient(client.id).then(setQuotes).catch((err) => setQuotesError(err.message));
-    getBookingConfirmationsForClient(client.id).then(setBookings).catch(() => {});
-    getInvoicesForClient(client.id).then(setInvoices).catch(() => {});
+    setDocumentsLoading(true);
+    Promise.allSettled([
+      getQuotesForClient(client.id).then(setQuotes).catch((err) => setQuotesError(err.message)),
+      getBookingConfirmationsForClient(client.id).then(setBookings).catch(() => {}),
+      getInvoicesForClient(client.id).then(setInvoices).catch(() => {})
+    ]).then(() => setDocumentsLoading(false));
   }, [client.id]);
 
   function startNewBooking() {
@@ -318,7 +400,9 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
             </div>
           )}
 
-          {quotes.length === 0 ? (
+          {documentsLoading ? (
+            <p className="muted-small">Loading quotes...</p>
+          ) : quotes.length === 0 ? (
             <p className="muted-small">No quotes issued yet.</p>
           ) : (
             <div className="quote-list">
@@ -377,7 +461,9 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
             </div>
           )}
 
-          {bookings.length === 0 ? (
+          {documentsLoading ? (
+            <p className="muted-small">Loading booking confirmations...</p>
+          ) : bookings.length === 0 ? (
             <p className="muted-small">No booking confirmations issued yet.</p>
           ) : (
             <div className="quote-list">
@@ -425,7 +511,9 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
             </div>
           )}
 
-          {invoices.length === 0 ? (
+          {documentsLoading ? (
+            <p className="muted-small">Loading invoices...</p>
+          ) : invoices.length === 0 ? (
             <p className="muted-small">No invoices issued yet.</p>
           ) : (
             <div className="quote-list">
@@ -475,14 +563,91 @@ export default function Client({ data, setData, selectedClient, setPage, setCale
           <button className="secondary" onClick={() => setPage("report")}>View Full Report</button>
         </div>
         <div className="card">
-          <h2>Contacts</h2>
-          {(client.contacts || []).map((contact) => (
-            <div className="contact-card" key={contact.id}>
-              <strong>{contact.name}</strong><small>{contact.role}</small>
-              <span><Mail size={14} />{contact.email}</span>
-              <span><Phone size={14} />{contact.phone}</span>
+          <h2>Assessment History</h2>
+          <div className="row">
+            <span><strong>Current</strong><small>Live, computed from what's scored right now</small></span>
+            <b>{scoreSummary.hasAssessment ? `${scoreSummary.overall}/100` : "Not yet assessed"}</b>
+          </div>
+          {assessmentRounds.length === 0 ? (
+            <p className="muted-small">No assessment round has been saved yet. Save one from the Assessment screen once scoring is complete, to track progress over successive visits.</p>
+          ) : (
+            [...assessmentRounds].reverse().map((round, i) => {
+              const roundScore = calculateOverall(round.snapshot);
+              return (
+                <div className="row" key={round.date + i}>
+                  <span><strong>{round.label || "Saved round"}</strong><small>{round.date}</small></span>
+                  <b>{roundScore}/100</b>
+                </div>
+              );
+            })
+          )}
+          {latestRound && (
+            <p className="muted-small">Last saved round: {latestRound.date}. Consider a reassessment if it's been several months, or use Check-in Reminders below to schedule one.</p>
+          )}
+        </div>
+        <div className="card wide">
+          <h2><FileText size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Documents</h2>
+          <p className="muted-small">Every quote, invoice, booking confirmation and evidence file for this client, in one searchable place.</p>
+          <input placeholder="Search documents by number, status, file name or note..." value={documentSearch} onChange={(e) => setDocumentSearch(e.target.value)} />
+          {documentsLoading ? (
+            <p className="muted-small">Loading documents...</p>
+          ) : allDocuments.length === 0 ? (
+            <p className="muted-small">{documentSearch ? "No documents match that search." : "No documents yet for this client."}</p>
+          ) : (
+            <div className="quote-list">
+              {allDocuments.map((doc) => (
+                doc.onClick ? (
+                  <button className="quote-row" key={doc.kind + doc.id} onClick={doc.onClick}>
+                    <div><strong>{doc.label}</strong><span className="quote-row-meta">{doc.kind} · {doc.date || "No date"} · {doc.status}</span></div>
+                  </button>
+                ) : (
+                  <div className="quote-row" key={doc.kind + doc.id}>
+                    <div><strong>{doc.label}</strong><span className="quote-row-meta">{doc.kind} · {doc.date || "Date not recorded"} · {doc.status}</span></div>
+                  </div>
+                )
+              ))}
             </div>
+          )}
+        </div>
+        <div className="card">
+          <div className="card-head-row">
+            <h2>Contacts</h2>
+            <button className="secondary edit-button" onClick={() => setEditingContacts(!editingContacts)}>{editingContacts ? "Done" : "Edit"}</button>
+          </div>
+          {(client.contacts || []).length === 0 && !editingContacts && <p className="muted">No contacts recorded yet.</p>}
+          {(client.contacts || []).map((contact) => (
+            editingContacts ? (
+              <div className="contact-edit-row" key={contact.id}>
+                <input placeholder="Name" value={contact.name} onChange={(e) => updateContact(contact.id, { name: e.target.value })} />
+                <input placeholder="Role" value={contact.role} onChange={(e) => updateContact(contact.id, { role: e.target.value })} />
+                <input placeholder="Email" value={contact.email} onChange={(e) => updateContact(contact.id, { email: e.target.value })} />
+                <input placeholder="Phone" value={contact.phone} onChange={(e) => updateContact(contact.id, { phone: e.target.value })} />
+                <label className="check-row contact-primary-row">
+                  <input type="checkbox" checked={!!contact.primary} onChange={() => setData({ ...data, clients: data.clients.map((c) => c.id === client.id ? { ...c, contacts: (c.contacts || []).map((p) => ({ ...p, primary: p.id === contact.id })) } : c) })} />
+                  Primary contact
+                </label>
+                <button className="evidence-remove-button" onClick={() => removeContact(contact.id)}><Trash2 size={14} /></button>
+              </div>
+            ) : (
+              <div className="contact-card" key={contact.id}>
+                <strong>{contact.name || "Unnamed contact"}{contact.primary && <span className="contact-primary-tag">Primary</span>}</strong><small>{contact.role}</small>
+                {contact.email && <span><Mail size={14} />{contact.email}</span>}
+                {contact.phone && <span><Phone size={14} />{contact.phone}</span>}
+              </div>
+            )
           ))}
+          {editingContacts && <button className="secondary" onClick={addContact}><Plus size={14} /> Add Contact</button>}
+        </div>
+        <div className="card">
+          <h2><CalendarClock size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Check-in Reminders</h2>
+          <p className="muted">Schedule 3, 6 and 9 month follow-ups to check progress against the plan agreed at assessment.</p>
+          {existingCheckins.length > 0 && (
+            <p className="muted-small">{existingCheckins.length} check-in{existingCheckins.length === 1 ? "" : "s"} already on the diary for this client.</p>
+          )}
+          <label>Baseline date (usually the assessment or report date)
+            <input type="date" value={checkinBaseline || defaultCheckinBaseline} onChange={(e) => setCheckinBaseline(e.target.value)} />
+          </label>
+          <button className="primary" onClick={scheduleCheckins}>Schedule 3 / 6 / 9 Month Check-ins</button>
         </div>
         <div className="card">
           <h2>Upcoming Diary</h2>

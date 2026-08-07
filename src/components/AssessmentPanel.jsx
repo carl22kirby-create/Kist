@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { escalationFlagOptions } from "../data/knowledgeBase.js";
 import QuickScorePanel from "./QuickScorePanel.jsx";
+import EvidenceUploader from "./EvidenceUploader.jsx";
 import {
   categoryScores, calculateOverall, isItemComplete, isImprovementPlanRequired, isImprovementPlanComplete,
   saveAssessmentRound, getPreviousRoundAnswer, getLatestRound, getAssessmentStatus, getTrafficLight,
@@ -22,11 +23,23 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
   const client = data.clients.find((c) => c.id === clientId);
   const selectedObjectives = client?.profile?.objectives || [];
   const catScores = categoryScores(answers);
-  const q = answers[currentQuestion];
+  // Defends against a blank-screen crash if currentQuestion is ever out of
+  // range for the current answers array — e.g. a caller that doesn't reset
+  // the index when switching clients, or a client's item count genuinely
+  // shrinking (a capability tag removed) while a stale index is still
+  // selected. Clamping here means every caller is protected the same way,
+  // rather than depending on each one remembering to reset it correctly.
+  useEffect(() => {
+    if (currentQuestion >= answers.length && answers.length > 0) setCurrentQuestion(answers.length - 1);
+    else if (currentQuestion < 0) setCurrentQuestion(0);
+  }, [answers.length, currentQuestion]);
+  const safeCurrentQuestion = Math.min(Math.max(currentQuestion, 0), Math.max(answers.length - 1, 0));
+  const q = answers[safeCurrentQuestion];
   const objectivePriority = getObjectivePriority(q, selectedObjectives);
   const priorityUnscored = selectedObjectives.length > 0
     ? sortByObjectivePriority(answers, selectedObjectives).filter((a) => getObjectivePriority(a, selectedObjectives) > 0 && a.score === 0).slice(0, 6)
     : [];
+  const preVisitUnscored = answers.filter((a) => a.preVisitResearch && a.score === 0);
   const priorityIds = new Set(
     selectedObjectives.length > 0
       ? answers.filter((a) => getObjectivePriority(a, selectedObjectives) > 0).map((a) => a.id)
@@ -99,15 +112,15 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key >= "1" && e.key <= "5") {
         update(q.id, { score: Number(e.key) });
-      } else if (e.key === "ArrowRight" && currentQuestion < answers.length - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else if (e.key === "ArrowLeft" && currentQuestion > 0) {
-        setCurrentQuestion(currentQuestion - 1);
+      } else if (e.key === "ArrowRight" && safeCurrentQuestion < answers.length - 1) {
+        setCurrentQuestion(safeCurrentQuestion + 1);
+      } else if (e.key === "ArrowLeft" && safeCurrentQuestion > 0) {
+        setCurrentQuestion(safeCurrentQuestion - 1);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [quickScoreMode, q, currentQuestion, answers.length]);
+  }, [quickScoreMode, q, safeCurrentQuestion, answers.length]);
 
   return (
     <div className="assessment-embed">
@@ -141,6 +154,17 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
             <b>Priority for Client's Objectives</b>
             <p className="muted-small">Not yet scored, most relevant to what this client said they want.</p>
             {priorityUnscored.map((a) => (
+              <button key={a.id} className="priority-jump-row" onClick={() => setCurrentQuestion(answers.findIndex((x) => x.id === a.id))}>
+                {a.concept}
+              </button>
+            ))}
+          </div>
+        )}
+        {preVisitUnscored.length > 0 && (
+          <div className="previsit-box">
+            <b>Can Be Prepared Before the Visit</b>
+            <p className="muted-small">These don't need the client present — website, Google Business Profile and similar public information can be checked from the office ahead of time.</p>
+            {preVisitUnscored.map((a) => (
               <button key={a.id} className="priority-jump-row" onClick={() => setCurrentQuestion(answers.findIndex((x) => x.id === a.id))}>
                 {a.concept}
               </button>
@@ -199,8 +223,9 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
           <span className="q-badge q-badge-traffic">{trafficLight.icon} {trafficLight.label}</span>
           {objectivePriority > 0 && <span className="q-badge q-badge-objective">Priority for Client's Objectives</span>}
           {hypothesis?.targetConcepts?.includes(q.concept) && <span className="q-badge q-badge-hypothesis">Testing Hypothesis</span>}
+          {q.preVisitResearch && <span className="q-badge q-badge-previsit">Can Be Researched Before the Visit</span>}
         </div>
-        <h2>BPI {currentQuestion + 1} of {answers.length}</h2>
+        <h2>BPI {safeCurrentQuestion + 1} of {answers.length}</h2>
         {q.concept && <p className="q-concept">{q.concept}</p>}
         {q.conceptPurpose && <p className="q-purpose">{q.conceptPurpose}</p>}
         {q.commercialImpact && (
@@ -312,6 +337,7 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
           </div>
         )}
         <textarea placeholder="Evidence reviewed" value={q.evidence} onChange={(e) => update(q.id, { evidence: e.target.value })} />
+        <EvidenceUploader client={client} setData={setData} stage="Assessment" linkedQuestionId={q.id} />
 
         <h4 className="section-heading">Consultant Assessment</h4>
         <div className="consultant-assessment-grid">
@@ -446,8 +472,8 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
         )}
 
         <div className="q-nav">
-          <button className="secondary" disabled={currentQuestion === 0} onClick={() => setCurrentQuestion(currentQuestion - 1)}>Previous Question</button>
-          <button className="secondary" disabled={currentQuestion === answers.length - 1} onClick={() => setCurrentQuestion(currentQuestion + 1)}>Next Question</button>
+          <button className="secondary" disabled={safeCurrentQuestion === 0} onClick={() => setCurrentQuestion(safeCurrentQuestion - 1)}>Previous Question</button>
+          <button className="secondary" disabled={safeCurrentQuestion === answers.length - 1} onClick={() => setCurrentQuestion(safeCurrentQuestion + 1)}>Next Question</button>
         </div>
       </div>
       )}

@@ -1,6 +1,6 @@
 import {
   Home, Users, CalendarDays, ClipboardList, FileText, BarChart3, Sparkles,
-  Settings, Database, History, ListChecks, LogOut
+  Settings, Database, History, ListChecks, LogOut, PoundSterling
 } from "lucide-react";
 
 const groups = [
@@ -12,6 +12,7 @@ const groups = [
     ["reports", "Reports", FileText],
     ["actions", "Actions", ListChecks]
   ]],
+  ["Finance", [["finance", "Finance", PoundSterling]]],
   ["Insights", [["analytics", "Analytics", BarChart3], ["ai", "AI Consultant", Sparkles]]],
   ["System", [["foundation", "Foundation", Database], ["versions", "Version History", History], ["settings", "Settings", Settings]]]
 ];
@@ -43,7 +44,7 @@ export default function Sidebar({ page, setPage, saveStatus, onLogout }) {
       ))}
       <button className="logout-button" onClick={onLogout}><LogOut size={17} /> Log Out</button>
       <div className="version">
-        Version 6.5.0<br /><span>Benchmarking release</span>
+        Version 6.19.0<br /><span>Finance module (foundation)</span>
         {saveStatus && <div className={`sync-status ${saveStatus}`}>{STATUS_LABEL[saveStatus] || ""}</div>}
       </div>
     </aside>

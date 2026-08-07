@@ -6,6 +6,9 @@ import { dateToParts, formatDate, startOfWeek, addDays, addMonths, addYears } fr
 export default function Calendar({ data, setData, calendarAnchor, setCalendarAnchor, setPage, setSelectedClient }) {
   const [view, setView] = useState("week");
   const [selected, setSelected] = useState(null);
+  const [draggedId, setDraggedId] = useState(null);
+  const [dragOverDate, setDragOverDate] = useState(null);
+  const [repeatWeeks, setRepeatWeeks] = useState(4);
   const anchorDate = dateToParts(calendarAnchor);
   const weekStart = startOfWeek(anchorDate);
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -16,6 +19,50 @@ export default function Calendar({ data, setData, calendarAnchor, setCalendarAnc
     const nextSchedule = data.schedule.map((item) => (item.id === id ? { ...item, ...updates } : item));
     const updated = nextSchedule.find((item) => item.id === id);
     setData({ ...data, schedule: nextSchedule }); setSelected(updated);
+  }
+  // Dragging and dropping an appointment onto a different day is just
+  // another way of calling the same update() used by the edit form — one
+  // single code path either way, so there's no risk of the two getting
+  // out of sync with each other.
+  function handleDrop(newDate) {
+    if (draggedId) update(draggedId, { date: newDate });
+    setDraggedId(null);
+    setDragOverDate(null);
+  }
+
+  // Generates real, individual schedule entries — one per occurrence,
+  // linked by a shared recurrenceGroupId — rather than an abstract
+  // recurrence rule. Deliberately simple: editing or cancelling one
+  // occurrence only ever affects that one entry, avoiding the classic
+  // "does this change apply to just this event, this and future, or the
+  // whole series" ambiguity that recurring calendar events are notorious
+  // for getting wrong.
+  function makeRecurring() {
+    if (!selected) return;
+    const groupId = selected.recurrenceGroupId || selected.id;
+    const newEntries = [];
+    for (let i = 1; i < repeatWeeks; i++) {
+      const nextDate = formatDate(addDays(dateToParts(selected.date), i * 7));
+      newEntries.push({ ...selected, id: "s" + Date.now() + "-" + i, date: nextDate, recurrenceGroupId: groupId });
+    }
+    const updatedOriginal = data.schedule.map((item) => item.id === selected.id ? { ...item, recurrenceGroupId: groupId } : item);
+    setData({ ...data, schedule: [...newEntries, ...updatedOriginal] });
+    setSelected({ ...selected, recurrenceGroupId: groupId });
+  }
+
+  function cancelSeries() {
+    if (!selected?.recurrenceGroupId) return;
+    if (!confirm("Cancel every remaining occurrence in this series from today onward? Past occurrences are left untouched.")) return;
+    const today = formatDate(new Date());
+    setData({
+      ...data,
+      schedule: data.schedule.map((item) =>
+        item.recurrenceGroupId === selected.recurrenceGroupId && item.date >= today
+          ? { ...item, status: "Cancelled" }
+          : item
+      )
+    });
+    setSelected({ ...selected, status: "Cancelled" });
   }
   function addEntry() {
     const client = data.clients[0];
@@ -51,10 +98,25 @@ export default function Calendar({ data, setData, calendarAnchor, setCalendarAnc
               {weekDates.map((date) => {
                 const ds = formatDate(date);
                 return (
-                  <div className="day" key={ds}>
+                  <div
+                    className={`day ${dragOverDate === ds ? "day-drag-over" : ""}`}
+                    key={ds}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverDate(ds); }}
+                    onDragLeave={() => setDragOverDate((current) => current === ds ? null : current)}
+                    onDrop={(e) => { e.preventDefault(); handleDrop(ds); }}
+                  >
                     <h3>{date.toLocaleDateString("en-GB", { weekday: "long" })}<br /><small>{ds}</small></h3>
                     {data.schedule.filter((item) => item.date === ds).map((item) => (
-                      <button className={`event ${item.colour || "gold"}`} key={item.id} onClick={() => setSelected(item)}><b>{item.start}</b><strong>{item.client}</strong><span>{item.type}</span></button>
+                      <button
+                        className={`event ${item.colour || "gold"}`}
+                        key={item.id}
+                        draggable
+                        onDragStart={() => setDraggedId(item.id)}
+                        onDragEnd={() => { setDraggedId(null); setDragOverDate(null); }}
+                        onClick={() => setSelected(item)}
+                      >
+                        <b>{item.start}</b><strong>{item.client}</strong><span>{item.type}</span>
+                      </button>
                     ))}
                   </div>
                 );
@@ -69,10 +131,25 @@ export default function Calendar({ data, setData, calendarAnchor, setCalendarAnc
               {monthCells.map((date) => {
                 const ds = formatDate(date);
                 return (
-                  <div className="month-cell" key={ds}>
+                  <div
+                    className={`month-cell ${dragOverDate === ds ? "day-drag-over" : ""}`}
+                    key={ds}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverDate(ds); }}
+                    onDragLeave={() => setDragOverDate((current) => current === ds ? null : current)}
+                    onDrop={(e) => { e.preventDefault(); handleDrop(ds); }}
+                  >
                     <b>{date.getDate()}</b>
                     {data.schedule.filter((item) => item.date === ds).map((item) => (
-                      <button className="event compact" key={item.id} onClick={() => setSelected(item)}>{item.client}</button>
+                      <button
+                        className="event compact"
+                        key={item.id}
+                        draggable
+                        onDragStart={() => setDraggedId(item.id)}
+                        onDragEnd={() => { setDraggedId(null); setDragOverDate(null); }}
+                        onClick={() => setSelected(item)}
+                      >
+                        {item.client}
+                      </button>
                     ))}
                   </div>
                 );
@@ -111,6 +188,22 @@ export default function Calendar({ data, setData, calendarAnchor, setCalendarAnc
               <button className="primary" onClick={openVisit}>Open Visit</button>
               <button className="secondary" onClick={() => { const copy = { ...selected, id: "s" + Date.now(), start: "13:00", end: "14:00" }; setData({ ...data, schedule: [copy, ...data.schedule] }); setSelected(copy); }}>Duplicate</button>
               <button className="danger" onClick={() => update(selected.id, { status: "Cancelled" })}>Cancel Visit</button>
+
+              <div className="recurrence-box">
+                {selected.recurrenceGroupId ? (
+                  <>
+                    <p className="muted-small">Part of a recurring series.</p>
+                    <button className="danger" onClick={cancelSeries}>Cancel Remaining Series</button>
+                  </>
+                ) : (
+                  <>
+                    <label>Repeat weekly, this many times (including this one)
+                      <input type="number" min="2" max="52" value={repeatWeeks} onChange={(e) => setRepeatWeeks(Number(e.target.value))} />
+                    </label>
+                    <button className="secondary" onClick={makeRecurring}>Make Recurring</button>
+                  </>
+                )}
+              </div>
             </div>
           ) : <p className="muted">Select an appointment to edit it. Reschedule updates Dashboard.</p>}
         </div>

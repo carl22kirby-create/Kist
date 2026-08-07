@@ -1,6 +1,6 @@
 import BusinessDNA from "../components/BusinessDNA.jsx";
 import {
-  getClientAssessment, categoryScores, calculateOverall, getScoreTier, computeBenchmark,
+  getClientAssessment, categoryScores, getClientScoreSummary, computeBenchmark, buildRoadmap,
   topCategories, bottomCategories, notableAnswers, getEscalations, getObjectiveFindings, reviewHypothesis
 } from "../utils/scoring.js";
 
@@ -9,10 +9,8 @@ const today = () => new Date().toLocaleDateString("en-GB", { day: "numeric", mon
 export default function ClientReport({ data, selectedClient, setPage }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const answers = getClientAssessment(data, client.id);
-  const hasAssessment = answers.some((q) => q.score > 0);
   const catScores = categoryScores(answers);
-  const overall = hasAssessment ? calculateOverall(answers) : client.score;
-  const scoreTier = getScoreTier(overall);
+  const { overall, tier: scoreTier, hasAssessment } = getClientScoreSummary(data, client.id);
   const benchmark = computeBenchmark(data, client.id);
   const strengths = topCategories(catScores, 3);
   const improvements = bottomCategories(catScores, 3);
@@ -30,10 +28,20 @@ export default function ClientReport({ data, selectedClient, setPage }) {
   const sortedActions = [...clientActions].sort(
     (a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3)
   );
+  // Uses the exact same evidence-based roadmap builder as the Visit
+  // Workflow's 90 Day Action Plan stage — this used to have its own,
+  // separate logic that bucketed a client's actions purely by their array
+  // position (item 1 into 30 days, item 2 into 60, item 3 into 90, item 4
+  // back into 30, and so on), completely unrelated to any real target
+  // date or priority. That meant the report's roadmap and the Visit
+  // Workflow's roadmap could show two different, contradictory 90 day
+  // plans for the same client. Fixed to be the same calculation, always.
+  const roadmap = buildRoadmap(answers);
   const buckets = [
-    { label: "Next 30 Days", items: sortedActions.filter((_, i) => i % 3 === 0) },
-    { label: "31 to 60 Days", items: sortedActions.filter((_, i) => i % 3 === 1) },
-    { label: "61 to 90 Days", items: sortedActions.filter((_, i) => i % 3 === 2) }
+    { label: "Next 30 Days", items: roadmap.thirty },
+    { label: "31 to 60 Days", items: roadmap.sixty },
+    { label: "61 to 90 Days", items: roadmap.ninety },
+    { label: "Long Term", items: roadmap.longTerm }
   ];
 
   const latestVisit = [...data.schedule].filter((s) => s.clientId === client.id).sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -147,14 +155,20 @@ export default function ClientReport({ data, selectedClient, setPage }) {
           )}
           <div className="report-summary-grid">
             <div className="report-score-block">
-              <span className="report-score">{overall}</span>
+              <span className="report-score">{hasAssessment ? overall : "—"}</span>
               <span className="report-score-label">Overall Score / 100</span>
-              <span className={`report-band report-band-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
-              {benchmark.sampleSize > 0 && (
-                <p className="report-benchmark-line">
-                  {overall > benchmark.averageOverall ? "Above" : overall < benchmark.averageOverall ? "Below" : "In line with"} the average of {benchmark.averageOverall}
-                  {" "}across {benchmark.sampleSize} other assessed client{benchmark.sampleSize === 1 ? "" : "s"}
-                </p>
+              {hasAssessment ? (
+                <>
+                  <span className={`report-band report-band-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
+                  {benchmark.sampleSize > 0 && (
+                    <p className="report-benchmark-line">
+                      {overall > benchmark.averageOverall ? "Above" : overall < benchmark.averageOverall ? "Below" : "In line with"} the average of {benchmark.averageOverall}
+                      {" "}across {benchmark.sampleSize} other assessed client{benchmark.sampleSize === 1 ? "" : "s"}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <span className="report-band">Not yet assessed</span>
               )}
             </div>
             <p className="report-summary-text">
@@ -167,8 +181,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
                   opportunity for improvement.
                 </>
               ) : (
-                <>No full assessment has been recorded for {client.name} yet. This report reflects the client's
-                  current recorded score of <strong>{client.score}</strong> and existing action items only.</>
+                <>No assessment has been recorded for {client.name} yet. This report reflects existing action items only — a Business Performance Score will appear here once BPIs have been scored.</>
               )}
             </p>
           </div>
@@ -212,6 +225,44 @@ export default function ClientReport({ data, selectedClient, setPage }) {
                 </ul>
               </div>
             </div>
+          </section>
+        )}
+
+        {hasAssessment && (
+          <section className="report-section report-discipline-pages">
+            <h2>Discipline Detail</h2>
+            <p className="report-muted">Every scored indicator, organised by discipline, in the order it was assessed.</p>
+            {catScores.filter((c) => c.answered > 0).map((cat) => {
+              const catAnswers = answers
+                .filter((a) => a.category === cat.category && a.score > 0)
+                .sort((a, b) => a.score - b.score);
+              return (
+                <div className="report-discipline-page report-avoid-break" key={cat.category}>
+                  <div className="report-discipline-head">
+                    <h3>{cat.category}</h3>
+                    <span className="report-table-score">{cat.score}/100</span>
+                  </div>
+                  <p className="report-muted-small">{cat.answered} of {cat.total} indicators scored</p>
+                  <table className="report-table">
+                    <thead><tr><th>Indicator</th><th>Score</th><th>Note</th></tr></thead>
+                    <tbody>
+                      {catAnswers.map((a) => (
+                        <tr key={a.id}>
+                          <td>{a.concept || a.question}</td>
+                          <td className="report-table-score">{a.score}/5</td>
+                          <td>
+                            {a.notes || "—"}
+                            {a.score <= 3 && a.improvementPlan?.recommendedActions && (
+                              <div className="report-finding-action">Recommended: {a.improvementPlan.recommendedActions}</div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
           </section>
         )}
 
@@ -260,7 +311,7 @@ export default function ClientReport({ data, selectedClient, setPage }) {
           )}
         </section>
 
-        {clientActions.length > 0 && (
+        {(roadmap.thirty.length + roadmap.sixty.length + roadmap.ninety.length + roadmap.longTerm.length) > 0 && (
           <section className="report-section report-avoid-break">
             <h2>90 Day Roadmap</h2>
             <div className="report-roadmap">
@@ -269,7 +320,12 @@ export default function ClientReport({ data, selectedClient, setPage }) {
                   <h3>{bucket.label}</h3>
                   {bucket.items.length ? (
                     <ul className="report-list">
-                      {bucket.items.map((a) => <li key={a.id}>{a.title}</li>)}
+                      {bucket.items.map((item) => (
+                        <li key={item.id}>
+                          <strong>{item.concept}</strong> — {item.improvementPlan.recommendedActions}
+                          {item.improvementPlan.owner && <span className="report-muted-small"> ({item.improvementPlan.owner})</span>}
+                        </li>
+                      ))}
                     </ul>
                   ) : (
                     <p className="report-muted-small">No actions allocated.</p>

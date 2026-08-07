@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import BusinessDNA from "../components/BusinessDNA.jsx";
 import {
-  getClientAssessment, categoryScores, calculateOverall, getScoreTier, computeBenchmark,
+  getClientAssessment, categoryScores, getClientScoreSummary, computeBenchmark,
   topCategories, bottomCategories, reviewHypothesis, buildRoadmap
 } from "../utils/scoring.js";
 
@@ -9,8 +9,7 @@ export default function Presentation({ data, selectedClient, setPage }) {
   const client = data.clients.find((c) => c.id === selectedClient) || data.clients[0];
   const answers = getClientAssessment(data, client.id);
   const catScores = categoryScores(answers);
-  const overall = calculateOverall(answers);
-  const scoreTier = getScoreTier(overall);
+  const { overall, tier: scoreTier, hasAssessment } = getClientScoreSummary(data, client.id);
   const benchmark = computeBenchmark(data, client.id);
   const strengths = topCategories(catScores, 3);
   const improvements = bottomCategories(catScores, 3);
@@ -88,15 +87,21 @@ export default function Presentation({ data, selectedClient, setPage }) {
         {current === "score" && (
           <div className="presentation-content presentation-score-slide">
             <h2>Business Performance Score</h2>
-            <strong className="presentation-score">{overall}</strong>
-            <span className="presentation-score-label">out of 100</span>
-            <span className={`presentation-tier-badge presentation-tier-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
-            {benchmark.sampleSize > 0 && (
-              <p className="presentation-benchmark-line">
-                {overall > benchmark.averageOverall ? "Above" : overall < benchmark.averageOverall ? "Below" : "In line with"} the average of {benchmark.averageOverall} across {benchmark.sampleSize} other assessed client{benchmark.sampleSize === 1 ? "" : "s"}
-              </p>
+            {hasAssessment ? (
+              <>
+                <strong className="presentation-score">{overall}</strong>
+                <span className="presentation-score-label">out of 100</span>
+                <span className={`presentation-tier-badge presentation-tier-${scoreTier.tier.toLowerCase()}`}>{scoreTier.tier} — {scoreTier.label}</span>
+                {benchmark.sampleSize > 0 && (
+                  <p className="presentation-benchmark-line">
+                    {overall > benchmark.averageOverall ? "Above" : overall < benchmark.averageOverall ? "Below" : "In line with"} the average of {benchmark.averageOverall} across {benchmark.sampleSize} other assessed client{benchmark.sampleSize === 1 ? "" : "s"}
+                  </p>
+                )}
+                <BusinessDNA scores={catScores.map((c) => c.score)} />
+              </>
+            ) : (
+              <p className="presentation-score-label">Not yet assessed — score will appear here once BPIs have been scored.</p>
             )}
-            <BusinessDNA scores={catScores.map((c) => c.score)} />
             <p className="presentation-footnote">This score is the evidence behind the story — not the point of it.</p>
           </div>
         )}

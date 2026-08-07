@@ -10,8 +10,8 @@ export default async function handler(req, res) {
   if (!(await requireAuth(req, res, supabase))) return;
 
   const { fileName, mimeType, base64Data, clientId } = req.body || {};
-  if (!fileName || !mimeType || !base64Data || !clientId) {
-    return res.status(400).json({ error: "fileName, mimeType, base64Data and clientId are all required" });
+  if (!fileName || !mimeType || !base64Data) {
+    return res.status(400).json({ error: "fileName, mimeType and base64Data are required" });
   }
   if (!ALLOWED_TYPES.has(mimeType)) {
     return res.status(400).json({ error: `File type ${mimeType} isn't allowed. Use JPEG, PNG, WebP or PDF.` });
@@ -23,7 +23,11 @@ export default async function handler(req, res) {
   }
 
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = `${clientId}/${Date.now()}-${safeName}`;
+  // clientId is optional — business-level documents (expense receipts,
+  // supplier invoices) aren't tied to any client, so they use a fixed
+  // internal prefix instead, but still land in the same private bucket
+  // behind the same signed-URL access model as client evidence.
+  const path = `${clientId || "_business"}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, buffer, { contentType: mimeType, upsert: false });
   if (uploadError) return res.status(500).json({ error: uploadError.message });

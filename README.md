@@ -615,6 +615,127 @@ flagged as overdue. I also specifically checked that a real quote the
 client had created independently since the previous release survived all
 of this testing completely untouched.
 
+## Vercel Function Limit — Read Before Adding New API Routes
+
+Vercel's Hobby plan caps Serverless Functions at **12 per project**. Every
+file directly under `/api` counts as one, regardless of size. This project
+hit that limit at 13 files in early August 2026 — the deployment would
+likely have failed outright.
+
+Fixed by consolidating down to 5 files, each dispatched internally by a
+query parameter rather than by filename:
+
+- **`api/auth.js`** — `?action=health|session|login|logout`
+- **`api/data.js`** — the main sync endpoint; GET/PUT for normal saves, POST for reset
+- **`api/documents.js`** — `?type=quote|booking|invoice|payment|business-settings`
+- **`api/ai-ask.js`** — KIST Brain, unchanged
+- **`api/upload.js`** — evidence file uploads, unchanged
+
+**If you're adding a new API route**: don't create a new file under `/api`
+by default. Add a new `?action=` or `?type=` branch to whichever existing
+consolidated file it belongs with instead. Only create a genuinely new
+file if the new route doesn't fit any existing grouping — and even then,
+check the current file count first (`ls api | wc -l`) and leave headroom
+rather than creeping back up toward 12.
+
+## Dashboard Rebuild — Operational Command Centre (v6.6.0)
+
+Followed a direct end-user review of the actual deployed app, not a
+speculative redesign. The feedback was blunt and specific, and the fix
+matches it exactly.
+
+**Removed entirely**: the "AI Alerts" widget, which was hardcoded fake
+text (`"ABC Engineering has high operational risk..."`) that never
+reflected real client state. This directly contradicted KIST's own
+evidence-based premise, so it's gone — not disabled, not softened, gone —
+rather than shipped in a state nobody would sign off on for a paying
+client.
+
+**Fixed a real structural issue**: scores throughout the app previously
+came from a static field (`client.score`) that was never actually kept in
+sync with the real computed assessment score. There is now exactly one
+function — `getClientScoreSummary()` in `scoring.js` — that Dashboard,
+Clients, Client Report and Presentation all call. A score is always
+`calculateOverall()` run against real recorded answers, never a stored
+number that could quietly drift out of sync with itself. "Previous score"
+now comes from the last saved Assessment Round snapshot, computed the same
+way, not a separately stored figure either.
+
+**The DNA widget stopped being decorative**: it used to render a
+hardcoded example shape (`[82, 76, 61, 74, 67, 70, 58, 63, 42, 79, 69]`)
+with no connection to any real client. It now shows the real category
+breakdown of whichever assessed client currently has the lowest score —
+or an honest "no client assessed yet" message if none do, which is
+genuinely the current state of the live database as of this release.
+
+**New "Needs Your Attention" panel** replaces the old scattered widget
+grid as the actual point of the page: overdue invoices, escalations,
+overdue actions, quotes awaiting response, upcoming visits, and clients
+who've never been assessed — every single line item a real, computed
+fact. A compact **Business Overview strip** (quotes awaiting response,
+visits in the next 7 days, invoices outstanding, invoices overdue) sits
+below it, backed by `get_commercial_overview()`, a new database function
+computing real counts directly in SQL rather than fetched-and-counted
+client side.
+
+Tested directly against the live production database in its actual
+current state — three real clients, zero completed assessments — and
+confirmed the dashboard now surfaces exactly one honest, correct attention
+item ("3 clients not yet assessed") rather than any fabricated content.
+
+## Critical Security Fix — Read This (v6.7.0)
+
+This is the most important thing in this README. If you ever create a new
+table or function through the Supabase dashboard's SQL editor rather than
+a tracked migration file, check this section again afterward.
+
+**What was wrong**: the `anon` Postgres role — the credential behind
+Supabase's public "anon key" — had full SELECT/INSERT/UPDATE/DELETE on
+every table and EXECUTE on every function, including `get_full_data()`.
+Row Level Security was disabled throughout (by design — this app was
+always meant to enforce access control in the password/session layer
+inside the API, not in Postgres). The combination meant anyone holding
+the anon key could call the database directly via Supabase's REST API and
+receive every client's complete data, with zero password required,
+entirely bypassing this app's login screen. This app's frontend never
+uses the anon key — confirmed by checking the built bundle contains no
+Supabase credentials at all — but the key still exists as a valid,
+usable credential for this project regardless of whether this app
+happens to use it.
+
+**Fixed**: revoked all privileges from `anon` and `authenticated` on
+every table, function and sequence, and fixed default privileges so a
+future migration doesn't silently reopen this. `service_role` — the only
+role this app's server-side code actually uses, via
+`SUPABASE_SERVICE_ROLE_KEY`, never exposed to the frontend — has its own
+separate grants and was confirmed completely unaffected: `get_full_data()`
+tested working immediately after the change.
+
+**Also fixed**: login had no rate limiting at all. scrypt's deliberate
+slowness helps a little, but Vercel runs function invocations in
+parallel, so that alone wasn't real protection against a scripted
+attempt. More than 10 failed attempts from the same address in 15 minutes
+now blocks further attempts, tracked in a real table (`login_attempts`)
+since serverless functions have no memory between requests.
+
+**Also audited and confirmed clean** in this pass: password hashing
+(scrypt, per-password salts, timing-safe comparison — see `lib/auth.js`),
+session tokens (256 bits of cryptographic randomness), cookie flags
+(HttpOnly, SameSite, Secure in production), file upload validation (type
+allowlist, size limit, filename sanitisation against path traversal,
+private bucket with signed URLs), no secrets anywhere in git history, no
+dynamic SQL construction anywhere in the database layer, and no
+`dangerouslySetInnerHTML` anywhere in the frontend.
+
+**Worth knowing, not fixed here, your call**: this app uses a single
+shared password for anyone who needs access — there's no per-person
+login, so there's no way to know *which* person did something, only that
+someone with the password did. Fine for a sole trader; worth revisiting
+if you ever bring someone else on. Evidence file signed URLs last a full
+year once generated, which is a reasonable usability tradeoff but means a
+leaked link would work for a long time — not fixed since shortening it
+meaningfully would break images in older reports.
+
 ## Architecture
 
 

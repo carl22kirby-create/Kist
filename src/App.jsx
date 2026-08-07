@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Finance from "./pages/Finance.jsx";
 import Clients from "./pages/Clients.jsx";
 import Client from "./pages/Client.jsx";
 import Calendar from "./pages/Calendar.jsx";
@@ -168,6 +169,7 @@ export default function App() {
 
   const pages = {
     dashboard: <Dashboard {...props} />,
+    finance: <Finance {...props} />,
     clients: <Clients {...props} />,
     client: <Client {...props} />,
     calendar: <Calendar {...props} />,

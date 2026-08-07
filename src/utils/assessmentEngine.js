@@ -81,6 +81,7 @@ const finalisedKnowledgeItems = knowledgeBase.map((entry, i) => ({
   commercialImpact: entry.commercialImpact,
   guidanceContent: entry.guidance,
   journeyStage: "Internal",
+  preVisitResearch: !!entry.concept.preVisitResearch,
   guidance: entry.concept.type === "observation"
     ? "Score this from direct observation during the visit rather than by asking the client. Evidence should always outweigh opinion."
     : "Score using the maturity bands for this concept — evidence should always outweigh opinion.",

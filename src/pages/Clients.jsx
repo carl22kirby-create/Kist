@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus, Search, Tag } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
 import ClientOnboarding from "./ClientOnboarding.jsx";
+import { getClientScoreSummary } from "../utils/scoring.js";
 
 export default function Clients({ data, setData, setPage, setSelectedClient, setCalendarAnchor }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -42,9 +43,10 @@ export default function Clients({ data, setData, setPage, setSelectedClient, set
       <div className="client-grid">
         {filtered.map((client) => {
           const primary = (client.contacts || [])[0] || {};
+          const { overall, tier, hasAssessment } = getClientScoreSummary(data, client.id);
           return (
             <button className="client-card card" key={client.id} onClick={() => { setSelectedClient(client.id); setPage("client"); }}>
-              <div className="client-top"><div><h2>{client.name}</h2><p>{client.industry} · {client.health}</p></div><strong>{client.score}</strong></div>
+              <div className="client-top"><div><h2>{client.name}</h2><p>{client.industry} · {hasAssessment ? tier.tier : "Not yet assessed"}</p></div><strong>{hasAssessment ? overall : "—"}</strong></div>
               <div className="client-tags">{(client.tags || []).slice(0, 3).map((t) => <span key={t}><Tag size={12} />{t}</span>)}</div>
               <div className="client-contact"><small>{primary.name || "No contact"} · {primary.role || ""}</small></div>
             </button>

@@ -99,7 +99,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
               <p className="muted">Capture site observations, risks and opportunities. Add photos as you go — each one gets its own caption, and you choose whether it appears in the client report.</p>
               <textarea placeholder="Walkthrough observations" value={notes.walkthrough || ""} onChange={(e) => setNotes({ ...notes, walkthrough: e.target.value })} />
               <h4 className="section-heading">Photos and Evidence</h4>
-              <EvidenceUploader client={client} data={data} setData={setData} stage="Business Walkthrough" />
+              <EvidenceUploader client={client} setData={setData} stage="Business Walkthrough" />
             </div>
           )}
 
@@ -110,7 +110,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
               <p className="muted">Request and review supporting documents — policies, KPI reports, certificates, anything that backs up what's been said. Upload copies here so they're kept with the visit.</p>
               <textarea placeholder="Evidence review notes" value={notes.evidence || ""} onChange={(e) => setNotes({ ...notes, evidence: e.target.value })} />
               <h4 className="section-heading">Documents and Photos</h4>
-              <EvidenceUploader client={client} data={data} setData={setData} stage="Evidence Review" />
+              <EvidenceUploader client={client} setData={setData} stage="Evidence Review" />
             </div>
           )}
 

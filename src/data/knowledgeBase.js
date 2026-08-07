@@ -33,8 +33,8 @@
 //                     while one that's still assessed but off-objective
 //                     sits further back as supporting context.
 
-function concept({ name, purpose, category, tags, relatedConcepts = [], observation = false }) {
-  return { name, purpose, category, tags, relatedConcepts, type: observation ? "observation" : "question" };
+function concept({ name, purpose, category, tags, relatedConcepts = [], observation = false, preVisitResearch = false }) {
+  return { name, purpose, category, tags, relatedConcepts, type: observation ? "observation" : "question", preVisitResearch };
 }
 
 function guidance({ ifClientSays = [], lookFor = [], warningSigns = [], typicalEvidence = [], commonExcuses = [], bestPractice = "", probingQuestions = [] }) {
@@ -252,7 +252,7 @@ export const knowledgeBase = [
     concept({
       name: "Website Credibility", purpose: "Measure whether the website builds trust and converts interest into enquiries, as a first impression of the business.",
       category: "Sales and Marketing", tags: ["Sales Team", "Ecommerce", "Visual Presentation", "Professionalism"],
-      relatedConcepts: ["Sales Conversion", "Customer Complaints"], observation: true
+      relatedConcepts: ["Sales Conversion", "Customer Complaints"], observation: true, preVisitResearch: true
     }),
     {
       question: "How effectively does the website communicate what this business offers, build trust and convert visitors into enquiries?",
@@ -722,6 +722,530 @@ export const knowledgeBase = [
       narrative: "A poor experience left unrecovered doesn't just lose one visit — it loses every future visit, every referral that guest would have made, and increasingly ends up as a public review shaping other people's decisions too."
     }),
     ["Improve customer retention", "Improve customer experience"]
+  ),
+
+  // ===== CONSTRUCTION =====
+
+  knowledgeItem(
+    concept({
+      name: "Site Safety Compliance", purpose: "Measure whether site safety is genuinely lived day to day, not just documented.",
+      category: "Risk Compliance and Resilience", tags: ["Construction", "Construction Design and Management"],
+      relatedConcepts: ["Subcontractor Management", "Preventative Maintenance"]
+    }),
+    {
+      question: "How is site safety compliance verified day to day, beyond the induction and the paperwork?",
+      supportingQuestions: ["Who is responsible for site safety on a typical day?", "Can you show me this week's site safety inspection records?"],
+      followUpQuestions: ["What's the last near miss or incident, and what changed afterwards?", "How would a subcontractor's unsafe practice actually get caught and stopped?"],
+      evidenceRequired: ["Site safety inspection records", "RAMS (Risk Assessment Method Statements)", "Incident and near-miss log"],
+      observationPoints: ["PPE compliance across the whole site", "Housekeeping and hazard management", "Signage and access control"],
+      metrics: ["Incident and near-miss rate", "Inspection completion rate"],
+      frequency: "Checked daily on site, reviewed formally weekly"
+    },
+    ["No structured site safety process.", "Safety paperwork exists but isn't consistently followed on site.", "Inspections happen but findings aren't tracked to resolution.", "Inspections are regular and findings are tracked and closed.", "Safety performance is actively monitored and trending in the right direction.", "Site safety is a genuine competitive differentiator, independently verified."],
+    [
+      { recommendation: "Introduce a basic daily site safety check.", benefitType: "Risk Reduction", estimationGuidance: "Frame in terms of the cost of a single serious incident — enforcement action, project delay and reputational damage combined." },
+      { recommendation: "Make the existing paperwork a genuinely followed process, not a formality.", benefitType: "Risk Reduction", estimationGuidance: "Estimate exposure from the gap between what's documented and what's actually happening on site." },
+      { recommendation: "Start tracking inspection findings through to actual resolution.", benefitType: "Risk Reduction", estimationGuidance: "Estimate the cost of the last unresolved finding that later caused a delay or incident." },
+      { recommendation: "Review safety trends across sites, not just per-site compliance.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate insurance premium or bid-scoring benefit from a demonstrably improving safety record." },
+      { recommendation: "Use safety performance data in tender responses and client conversations.", benefitType: "Growth Opportunity", estimationGuidance: "Estimate additional tender opportunities accessible with a strong, evidenced safety record." },
+      { recommendation: "Maintain the standard and use it as a training benchmark for other sites.", benefitType: "Growth Opportunity", estimationGuidance: "Use as a differentiator when competing for safety-conscious clients or frameworks." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We do a full induction, everyone knows the rules.", meansCheckFor: "Induction is a one-off event — ask what happens to reinforce it week to week, since that's where compliance actually erodes." },
+        { says: "Our subcontractors manage their own safety.", meansCheckFor: "Ask how that's actually verified — site safety is the main contractor's responsibility regardless of who's doing the work." }
+      ],
+      lookFor: ["Whether PPE compliance is consistent across the whole site, not just near the entrance", "Housekeeping standards in less visible areas", "Whether RAMS documents match what's actually happening"],
+      warningSigns: ["Safety paperwork exists but nobody on site can describe what it says", "Inspection findings repeat without ever being closed out", "Different standards for direct staff versus subcontractors"],
+      typicalEvidence: ["Dated inspection records with named findings and close-out dates", "A specific example of an unsafe practice being stopped and corrected", "Incident trend data over several months"],
+      commonExcuses: [{ excuse: "We're too busy hitting deadlines to slow down for safety checks.", probe: "Ask what a serious incident would actually do to that deadline, compared to the time a proper check takes." }],
+      bestPractice: "Leading construction operations track safety inspection findings the same way they track defects — owned and dated through to closure, not just noted and left.",
+      probingQuestions: ["What's the oldest unresolved safety finding on your current site?", "If I walked the site with you right now, what would you want me not to look at?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Reputation", "Time"],
+      narrative: "A serious site incident doesn't just risk enforcement action — it stops the site, damages the client relationship, and can exclude the business from future tenders that score safety record before price is even considered."
+    }),
+    ["Reduce business risk", "Prepare for growth"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Subcontractor Management", purpose: "Measure whether subcontractor quality and reliability is actively managed rather than assumed.",
+      category: "Operations and Process", tags: ["Construction"],
+      relatedConcepts: ["Supplier Performance", "Site Safety Compliance"]
+    }),
+    {
+      question: "How is subcontractor quality and reliability actually managed across a live project?",
+      supportingQuestions: ["Who owns the subcontractor relationship on site?", "Can you show me how a subcontractor's work gets signed off?"],
+      followUpQuestions: ["What's the last time a subcontractor's work had to be redone, and what happened next?", "How would a persistently underperforming subcontractor actually get replaced?"],
+      evidenceRequired: ["Subcontractor performance records", "Sign-off or snagging records", "Programme impact records from subcontractor delay"],
+      observationPoints: [],
+      metrics: ["Rework rate by subcontractor", "On-time completion rate by subcontractor"],
+      frequency: "Reviewed at each project milestone, trends reviewed quarterly"
+    },
+    ["Subcontractor performance isn't tracked at all.", "Issues are noticed but not formally recorded.", "Basic tracking exists for the largest packages only.", "Performance is tracked and reviewed across most packages.", "Performance data actively informs which subcontractors get repeat work.", "Subcontractor relationships are actively developed based on shared performance data."],
+    [
+      { recommendation: "Start recording completion and rework against your largest subcontract packages.", benefitType: "Cost Saving", estimationGuidance: "Estimate the cost of the last significant rework or delay caused by a subcontractor." },
+      { recommendation: "Record subcontractor issues formally, even in a simple shared log.", benefitType: "Risk Reduction", estimationGuidance: "Estimate exposure if the same subcontractor issue recurred on the next project with no record to challenge them." },
+      { recommendation: "Extend tracking beyond just the largest packages.", benefitType: "Cost Saving", estimationGuidance: "Estimate the value of leverage gained at the next tender stage with performance data in hand." },
+      { recommendation: "Use tracked performance in a formal review before repeat appointment.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate programme time saved by consolidating work toward reliably performing subcontractors." },
+      { recommendation: "Let performance data directly inform which subcontractors get preferred status.", benefitType: "Cost Saving", estimationGuidance: "Estimate savings from improved rates negotiated with a proven, preferred subcontractor base." },
+      { recommendation: "Share performance data with key subcontractors to drive joint improvement.", benefitType: "Growth Opportunity", estimationGuidance: "Use a strong subcontractor network as a genuine competitive advantage when tendering for larger or faster programmes." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We've used the same subbies for years, they're reliable.", meansCheckFor: "Tenure isn't performance — ask for a specific recent example of a subcontractor causing programme delay or rework." },
+        { says: "Snagging is normal, every project has it.", meansCheckFor: "Ask whether snagging is actually tracked BACK to which subcontractor caused it, or just fixed and forgotten." }
+      ],
+      lookFor: ["Whether any subcontractor data exists beyond memory", "How a subcontractor dispute actually gets escalated and resolved", "Whether alternative subcontractors are ever genuinely evaluated"],
+      warningSigns: ["Rework is treated as a normal cost of doing business rather than tracked to a cause", "No one owns the subcontractor relationship formally", "The same subcontractor issue recurs project after project"],
+      typicalEvidence: ["A scorecard or tracking sheet with real dates and figures per subcontractor", "A specific example of a subcontractor being replaced or renegotiated based on data", "Programme impact figures tied to a named subcontractor"],
+      commonExcuses: [{ excuse: "Good subcontractors are hard to find, we can't afford to be picky.", probe: "Ask what the actual cost of the last unreliable subcontractor was, compared to the perceived risk of using someone new." }],
+      bestPractice: "Strong construction operations track subcontractor performance by package and use that data directly in future appointment decisions, rather than defaulting to whoever was used last time.",
+      probingQuestions: ["What's the worst thing a subcontractor has done to your programme in the last year, and what changed afterwards?", "How would a new subcontractor actually get a fair chance to prove themselves?"]
+    }),
+    commercialImpact({
+      categories: ["Reduced profitability", "Time", "Risk"],
+      narrative: "Unmanaged subcontractor performance shows up as rework, programme delay and disputed variations — costs that pass straight through to margin on a fixed-price project with no easy way to recover them."
+    }),
+    ["Reduce costs", "Reduce business risk", "Improve operational efficiency"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Project Margin Control", purpose: "Measure whether project profitability is tracked and protected while work is in progress, not just discovered at the end.",
+      category: "Finance and Commercial Control", tags: ["Construction"],
+      relatedConcepts: ["Cash Flow Forecasting", "Subcontractor Management"]
+    }),
+    {
+      question: "How is a project's actual margin tracked while it's still live, rather than only becoming clear once it's finished?",
+      supportingQuestions: ["Who reviews project cost against budget, and how often?", "Can you show me the current cost position on a live project?"],
+      followUpQuestions: ["What's the last project that came in under budget, and how did you know it would before it finished?", "How would a cost overrun actually get flagged early enough to do something about it?"],
+      evidenceRequired: ["Cost versus budget tracking reports", "Variation and change order records"],
+      observationPoints: [],
+      metrics: ["Cost variance against budget", "Margin at completion versus margin at tender"],
+      frequency: "Reviewed at least monthly per live project"
+    },
+    ["Margin is only known once a project is finished.", "Cost tracking exists but is reviewed too infrequently to act on.", "Cost is reviewed regularly but rarely changes what happens next.", "Cost tracking is regular and genuinely informs decisions mid-project.", "Margin erosion is caught early and consistently acted on.", "Margin performance is tracked, benchmarked and used to improve future tendering."],
+    [
+      { recommendation: "Introduce a basic monthly cost-versus-budget check on live projects.", benefitType: "Cost Saving", estimationGuidance: "Estimate the margin gap on the last project where final cost surprised you, and what earlier visibility would have been worth." },
+      { recommendation: "Increase the frequency of cost review so issues surface while they're still fixable.", benefitType: "Risk Reduction", estimationGuidance: "Estimate cost of the last issue caught too late to act on versus what early visibility would have saved." },
+      { recommendation: "Build a habit of actually changing course when cost tracking flags a problem.", benefitType: "Cost Saving", estimationGuidance: "Estimate the margin recovered on a project where a mid-project correction was made." },
+      { recommendation: "Formalise mid-project cost reviews as a standing commercial habit.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate management time saved by structured reviews versus reactive firefighting." },
+      { recommendation: "Feed completed-project margin data back into how future jobs are tendered.", benefitType: "Growth Opportunity", estimationGuidance: "Estimate improved win-rate or margin from more accurately priced tenders." },
+      { recommendation: "Maintain the discipline and use margin data as a genuine commercial advantage in tendering.", benefitType: "Growth Opportunity", estimationGuidance: "Use a strong margin track record as evidence when pursuing larger or more complex contracts." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We know roughly how a job's going by feel.", meansCheckFor: "Ask for the actual current cost position on a specific live project — 'by feel' rarely survives being asked for a number." },
+        { says: "Margin's fine, we've never gone bust on a job.", meansCheckFor: "Ask what the margin actually was on the last three completed projects, compared to what was tendered." }
+      ],
+      lookFor: ["Whether cost tracking exists as a live document or only gets reconciled at the end", "How variations and change orders are captured as they happen", "Whether anyone can quote a current project's cost position without checking"],
+      warningSigns: ["Margin surprises are described as normal rather than investigated", "Variations are tracked informally or not at all until final account", "No one owns commercial tracking on a specific project"],
+      typicalEvidence: ["A live cost tracking document updated on a visible schedule", "A specific example of a mid-project correction that protected margin", "Completion margin data compared against original tender margin"],
+      commonExcuses: [{ excuse: "Every job's different, you can't really predict margin until it's done.", probe: "Ask how far off the last few completed jobs actually were from tender, and whether that gap is closing." }],
+      bestPractice: "Strong construction commercial control reviews cost against budget monthly on every live project, with a clear owner empowered to act the moment a variance appears, not just report it.",
+      probingQuestions: ["What's the current cost position on your biggest live project, right now?", "What was the margin on your last completed project, and how did that compare to what you tendered?"]
+    }),
+    commercialImpact({
+      categories: ["Cash flow", "Reduced profitability", "Risk"],
+      narrative: "In construction, margin is won or lost while the project is live, not discovered afterwards — by the time a final account reveals the damage, there's nothing left to do about it."
+    }),
+    ["Improve profitability", "Reduce business risk", "Reduce costs"]
+  ),
+
+  // ===== ENGINEERING =====
+
+  knowledgeItem(
+    concept({
+      name: "Technical Quality Assurance", purpose: "Measure whether technical errors are caught before they reach the client or site, not after.",
+      category: "Operations and Process", tags: ["Engineering"],
+      relatedConcepts: ["Preventative Maintenance", "Project Scope and Change Control"]
+    }),
+    {
+      question: "How is technical work checked and verified before it goes out, and how do you know that check actually works?",
+      supportingQuestions: ["Who checks a design or specification before it's issued?", "Can you show me a recent example of a check catching a real error?"],
+      followUpQuestions: ["What's the last error that got through to a client or site anyway, and why?", "How would a junior engineer's mistake actually get caught before it left the building?"],
+      evidenceRequired: ["Design check or sign-off records", "Records of errors caught before issue"],
+      observationPoints: [],
+      metrics: ["Error rate caught internally versus caught externally", "Rework rate from technical error"],
+      frequency: "Checked on every deliverable, trends reviewed quarterly"
+    },
+    ["No formal technical check before work goes out.", "Checks happen but are inconsistent or rushed.", "A check exists but rarely catches anything, suggesting it's not genuinely independent.", "Checks are consistent and demonstrably catch real errors.", "Check data is used to identify and fix recurring error patterns.", "Technical quality is tracked, benchmarked and a genuine point of client trust."],
+    [
+      { recommendation: "Introduce a basic independent check before any technical deliverable is issued.", benefitType: "Risk Reduction", estimationGuidance: "Estimate the cost of the last error that reached a client or site uncaught, including rework and reputational cost." },
+      { recommendation: "Make the existing check genuinely independent, not just a formality.", benefitType: "Risk Reduction", estimationGuidance: "Estimate exposure from a check that exists on paper but rarely actually catches anything." },
+      { recommendation: "Track what the check catches, so you know it's actually working.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate the value of errors caught internally versus the cost if they'd reached the client instead." },
+      { recommendation: "Use check data to spot and fix recurring error patterns at the source.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate rework time saved by eliminating the most frequent recurring error type." },
+      { recommendation: "Benchmark technical error rate over time and share it internally.", benefitType: "Growth Opportunity", estimationGuidance: "Use a demonstrably low error rate as a differentiator in client retention and new business conversations." },
+      { recommendation: "Maintain the standard and use it as a genuine point of client trust.", benefitType: "Growth Opportunity", estimationGuidance: "Use technical quality track record as evidence when pursuing larger or more technically demanding contracts." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "Everything gets checked before it goes out.", meansCheckFor: "Ask specifically who does the checking and whether it's genuinely a different person — self-checking rarely catches the checker's own blind spots." },
+        { says: "We've never really had a technical error reach a client.", meansCheckFor: "Ask how they'd actually know, if there's no system for the client to report one, or if minor ones get quietly absorbed." }
+      ],
+      lookFor: ["Whether sign-off records show a genuinely different name to the person who did the work", "Evidence of a check actually catching something specific, not just a tick box", "Whether error patterns repeat despite being 'caught'"],
+      warningSigns: ["The same type of error keeps appearing despite a check supposedly being in place", "Checks are rushed at the end of a project under deadline pressure", "No one can describe a specific example of the check working"],
+      typicalEvidence: ["Sign-off records naming a genuinely independent checker", "A specific documented example of a caught error and what happened next", "Error rate data tracked over multiple projects"],
+      commonExcuses: [{ excuse: "We don't have time for a full independent check on every job.", probe: "Ask what the cost of the last uncaught error actually was, compared to the time a proper check would have taken." }],
+      bestPractice: "Strong engineering quality assurance tracks not just whether a check happened, but what it actually caught — a check that never finds anything is either genuinely excellent work or, more often, not a real check at all.",
+      probingQuestions: ["What's the last real error your check process actually caught, in detail?", "If I picked a random deliverable from this month, could you show me who checked it and what they found?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Reputation", "Reduced profitability"],
+      narrative: "A technical error that reaches a client or site is far more expensive to fix than one caught internally — in cost, in the time lost to rework, and in the trust it costs with a client who now has reason to check your work more closely."
+    }),
+    ["Reduce business risk", "Improve profitability"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Project Scope and Change Control", purpose: "Measure whether scope changes are formally captured and priced, rather than absorbed silently into the original fee.",
+      category: "Finance and Commercial Control", tags: ["Engineering"],
+      relatedConcepts: ["Project Margin Control", "Technical Quality Assurance"]
+    }),
+    {
+      question: "How is a change in project scope actually captured, agreed and priced, once work is already underway?",
+      supportingQuestions: ["Who's responsible for spotting when scope has changed?", "Can you show me a recent example of a change being formally agreed?"],
+      followUpQuestions: ["What's the last piece of extra work that got done without being formally agreed or charged?", "How would a client's informal request actually get flagged as a scope change rather than just done?"],
+      evidenceRequired: ["Change control or variation records", "Original scope or fee proposal documents"],
+      observationPoints: [],
+      metrics: ["Value of unbilled scope change", "Time from scope change identified to formally agreed"],
+      frequency: "Reviewed at each project stage, trends reviewed quarterly"
+    },
+    ["Scope changes are absorbed informally with no process.", "A process exists but is rarely used in practice.", "Changes are sometimes captured but inconsistently priced.", "Changes are consistently captured and priced before work proceeds.", "Change control data is used to inform how future projects are scoped.", "Scope discipline is a genuine commercial strength, protecting margin project after project."],
+    [
+      { recommendation: "Introduce a basic rule: any scope change gets written down before work continues.", benefitType: "Revenue Opportunity", estimationGuidance: "Estimate the value of extra work done for free in the last quarter that was never formally captured." },
+      { recommendation: "Make the existing change process something people actually use under time pressure.", benefitType: "Revenue Opportunity", estimationGuidance: "Estimate unbilled scope change value across your current live projects." },
+      { recommendation: "Ensure every captured change is actually priced and agreed, not just noted.", benefitType: "Revenue Opportunity", estimationGuidance: "Estimate the gap between scope changes logged and scope changes actually invoiced." },
+      { recommendation: "Track how long it takes from change identified to change agreed, and shorten it.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate cash flow improvement from faster change agreement and billing." },
+      { recommendation: "Use change control history to price future projects more realistically.", benefitType: "Growth Opportunity", estimationGuidance: "Estimate margin improvement from tendering with more realistic scope assumptions based on past change patterns." },
+      { recommendation: "Maintain the discipline and treat it as a genuine protector of margin on every project.", benefitType: "Growth Opportunity", estimationGuidance: "Use consistent scope discipline as evidence of commercial maturity when pursuing larger clients." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We just get on with it, the client's happy so it works out.", meansCheckFor: "Ask what proportion of 'just getting on with it' work actually gets billed — this usually reveals significant unrecovered value." },
+        { says: "Our scope is pretty clear from the start, changes are rare.", meansCheckFor: "Ask for the last project's original scope document alongside what was actually delivered — the gap is often bigger than remembered." }
+      ],
+      lookFor: ["Whether a change control process exists on paper versus whether it's actually used", "How informal client requests get handled in the moment", "Whether priced changes actually make it onto an invoice"],
+      warningSigns: ["Scope creep is treated as inevitable rather than something to manage", "No one owns tracking the gap between original scope and delivered scope", "Changes are agreed verbally with no written record"],
+      typicalEvidence: ["A specific example of a change being formally identified, priced and agreed before proceeding", "A comparison between original scope and final delivered scope on a completed project", "Invoiced change value tracked against logged change value"],
+      commonExcuses: [{ excuse: "Formal change control slows things down and annoys clients.", probe: "Ask how much unbilled work has actually been absorbed as a result of avoiding that friction." }],
+      bestPractice: "Strong engineering commercial discipline treats any scope change as a trigger for a conversation before work continues, however small — the accumulated cost of many small unbilled changes is often larger than one big one.",
+      probingQuestions: ["What's the biggest piece of extra work you did last quarter that was never formally priced?", "If I compared your original proposal to what you actually delivered on your last project, how different would they be?"]
+    }),
+    commercialImpact({
+      categories: ["Lost revenue", "Reduced profitability"],
+      narrative: "Scope that quietly expands without being priced is one of the most common, least visible ways an engineering business loses margin — each individual instance feels small, but the accumulated cost across a year is rarely small at all."
+    }),
+    ["Increase revenue", "Improve profitability"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Technical Competency Development", purpose: "Measure whether technical staff capability is deliberately developed, rather than left to accumulate by chance.",
+      category: "People and Capability", tags: ["Engineering"],
+      relatedConcepts: ["Training Effectiveness", "Recruitment"]
+    }),
+    {
+      question: "How is technical competency developed and verified across the team, beyond initial qualification?",
+      supportingQuestions: ["Who tracks each engineer's development against the technical demands of their role?", "Can you show me a recent example of a specific skill gap being identified and addressed?"],
+      followUpQuestions: ["What's the last technical mistake that traced back to a genuine skills or experience gap?", "How would you know if someone was working beyond their current competency?"],
+      evidenceRequired: ["Individual development or competency records", "CPD or chartership progression records"],
+      observationPoints: [],
+      metrics: ["Proportion of staff meeting role-appropriate competency benchmarks", "CPD completion rate"],
+      frequency: "Reviewed at least annually per individual"
+    },
+    ["No structured competency development.", "Development happens informally and inconsistently.", "Basic tracking exists but isn't tied to actual role demands.", "Development is tracked and reasonably matched to role requirements.", "Competency gaps are identified proactively and closed before they cause problems.", "Technical capability is a genuine, visible strength and a factor in winning work."],
+    [
+      { recommendation: "Start with a basic map of what technical competency each role actually requires.", benefitType: "Risk Reduction", estimationGuidance: "Estimate the cost of the last error linked to someone working beyond their current competency." },
+      { recommendation: "Introduce some structure around development, even informally at first.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate time lost to avoidable technical errors traceable to a known but unaddressed skill gap." },
+      { recommendation: "Tie development tracking explicitly to what each role actually demands.", benefitType: "Risk Reduction", estimationGuidance: "Estimate exposure reduced by matching assigned work more closely to verified competency." },
+      { recommendation: "Move from reactive to proactive gap identification.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate rework or error cost avoided by closing a gap before it caused a problem, based on past incidents." },
+      { recommendation: "Use competency data to inform which work the business can confidently bid for.", benefitType: "Growth Opportunity", estimationGuidance: "Estimate additional contract value accessible once specific competency gaps are closed." },
+      { recommendation: "Maintain the standard and make technical capability a visible part of your offer.", benefitType: "Growth Opportunity", estimationGuidance: "Use demonstrated technical depth as a differentiator in client retention and business development." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "Our engineers are all qualified, that's the main thing.", meansCheckFor: "Qualification is a starting point, not an endpoint — ask what happens to keep pace with the technical demands of the work after that." },
+        { says: "People pick things up as they go.", meansCheckFor: "Ask how that's actually verified — informal learning without any check can mean gaps persist silently for years." }
+      ],
+      lookFor: ["Whether development conversations happen on a real schedule or only when convenient", "Evidence that a specific skill gap was identified and then genuinely closed", "Whether competency is matched to the technical demands of current work"],
+      warningSigns: ["The same type of technical mistake recurs with the same individual", "No one can describe a recent specific example of development happening", "Junior staff are given work without clear oversight matched to their experience level"],
+      typicalEvidence: ["Individual development records tied to specific role requirements", "A named example of a skill gap being identified and closed", "CPD or chartership progress tracked over time"],
+      commonExcuses: [{ excuse: "We're too busy delivering projects to focus on development.", probe: "Ask what the cost of the last competency-related error was, compared to the time development would have taken." }],
+      bestPractice: "Strong engineering people development ties individual growth plans directly to the technical demands of current and near-future work, rather than treating development as a generic, disconnected activity.",
+      probingQuestions: ["What's a specific skill gap you've identified and closed in the last year?", "How do you know whether someone's current competency actually matches what they're being asked to do?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Poor productivity", "Reduced profitability"],
+      narrative: "A technical competency gap that goes unaddressed doesn't announce itself — it shows up later as a design error, a missed requirement, or work that has to be redone by someone more experienced, at a much higher cost than closing the gap would have been."
+    }),
+    ["Improve staff performance", "Reduce business risk", "Prepare for growth"]
+  ),
+
+  // ===== HEALTHCARE =====
+
+  knowledgeItem(
+    concept({
+      name: "Care Quality and Compliance", purpose: "Measure whether care quality standards are demonstrably met day to day, not just at inspection.",
+      category: "Risk Compliance and Resilience", tags: ["Healthcare", "CQC"],
+      relatedConcepts: ["Safeguarding Practice", "Mandatory Training Compliance"]
+    }),
+    {
+      question: "What evidence shows that care quality standards are consistently met during actual delivery, not just documented for inspection?",
+      supportingQuestions: ["Who is responsible for monitoring care quality day to day?", "Can you show me today's actual care records, not a description of the process?"],
+      followUpQuestions: ["What's the last care quality issue identified internally, and how was it resolved?", "How would a lapse in standard actually get caught before it affected someone in your care?"],
+      evidenceRequired: ["Care quality audit records", "Incident and concern logs", "Care plan review records"],
+      observationPoints: ["Real-time record keeping during a live shift", "Staff confidence explaining care quality procedures"],
+      metrics: ["Internal audit score", "Time from concern raised to resolved"],
+      frequency: "Checked daily, formally audited monthly"
+    },
+    ["No structured care quality monitoring.", "Records exist but are inconsistently completed.", "Audits happen but findings rarely lead to change.", "Audits are regular and findings are tracked to resolution.", "Care quality is proactively monitored and trending in the right direction.", "Care quality is independently verified as exemplary and a genuine point of trust with families and commissioners."],
+    [
+      { recommendation: "Start with basic, consistent real-time care record completion.", benefitType: "Risk Reduction", estimationGuidance: "Frame in terms of the regulatory and reputational cost of a single substantiated care quality failure." },
+      { recommendation: "Make record completion a checked daily habit, not an occasional one.", benefitType: "Risk Reduction", estimationGuidance: "Estimate compliance exposure reduced by consistent, complete real-time records." },
+      { recommendation: "Introduce a regular review of audit findings through to actual resolution.", benefitType: "Risk Reduction", estimationGuidance: "Frame as catching a developing issue before it becomes a reportable incident or inspection finding." },
+      { recommendation: "Act visibly and quickly whenever an audit identifies an issue.", benefitType: "Customer Experience Improvement", estimationGuidance: "Estimate reputational and family trust value protected by resolving issues before they escalate." },
+      { recommendation: "Use trends in audit data to prevent issues before they occur.", benefitType: "Risk Reduction", estimationGuidance: "Estimate inspection or insurance benefit from a demonstrably strong, improving quality record." },
+      { recommendation: "Maintain the standard and use it as evidence in commissioner and family conversations.", benefitType: "Growth Opportunity", estimationGuidance: "Use an independently strong quality record as a genuine differentiator when seeking new placements or contracts." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We've never had a serious care quality issue.", meansCheckFor: "Absence of a known issue isn't the same as good practice — ask to see today's actual records, not a description of the process." },
+        { says: "All our staff know the standards, it's second nature.", meansCheckFor: "Ask how that's actually verified, not just assumed — knowledge and consistent practice under pressure are different things." }
+      ],
+      lookFor: ["Whether today's care records are genuinely complete in real time, not filled in afterwards", "Staff confidence when asked to explain a specific care quality procedure", "Whether audit findings actually lead to a visible change"],
+      warningSigns: ["Records show gaps or are completed in a batch after the shift", "The same audit finding recurs without ever being resolved", "Staff give inconsistent answers about the same care procedure"],
+      typicalEvidence: ["Complete, real-time care records with no gaps", "A specific example of an issue being caught and corrected before it affected someone in care", "Consistent staff answers when asked separately about the same procedure"],
+      commonExcuses: [{ excuse: "We're too stretched during a shift to fill things in properly at the time.", probe: "Ask what happens instead — batch-filling records afterwards defeats their purpose and is worth surfacing directly." }],
+      bestPractice: "Strong care quality practice shows up as real-time, consistently completed records and staff who can explain procedures confidently and consistently, not just compliant paperwork produced for inspection.",
+      probingQuestions: ["Can I see today's care records right now, as they currently stand?", "If I asked two different staff members the same care quality question, would I get the same answer?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Reputation", "Customer retention"],
+      narrative: "A substantiated care quality failure can trigger regulatory action, damage family and commissioner trust built over years, and in the most serious cases threaten the ability to continue operating at all."
+    }),
+    ["Reduce business risk", "Improve customer experience"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Safeguarding Practice", purpose: "Measure whether safeguarding is a genuinely embedded, accountable practice rather than a policy that exists on paper.",
+      category: "Leadership and Accountability", tags: ["Healthcare"],
+      relatedConcepts: ["Care Quality and Compliance", "Mandatory Training Compliance"]
+    }),
+    {
+      question: "How is safeguarding practice actually verified day to day, beyond the existence of a policy document?",
+      supportingQuestions: ["Who is the named safeguarding lead, and how visible is that role to the wider team?", "Can you walk me through what happens, step by step, if a member of staff raises a safeguarding concern?"],
+      followUpQuestions: ["What's the last safeguarding concern raised, and how was it handled?", "How would a new or temporary staff member know exactly what to do if they were worried about someone?"],
+      evidenceRequired: ["Safeguarding policy and procedure documents", "Safeguarding concern and escalation records", "Safeguarding training records"],
+      observationPoints: [],
+      metrics: ["Time from concern raised to formally escalated", "Proportion of staff with current safeguarding training"],
+      frequency: "Reviewed after every raised concern, formally audited quarterly"
+    },
+    ["No clear safeguarding accountability or process.", "A policy exists but staff are not confident in how to apply it.", "A process exists and is generally followed, but isn't proactively tested.", "The process is well understood and consistently followed under real conditions.", "Safeguarding practice is proactively tested and reviewed for continuous improvement.", "Safeguarding practice is independently verified as exemplary and a genuine point of confidence for families and regulators."],
+    [
+      { recommendation: "Establish a clear, named safeguarding lead that every member of staff can identify.", benefitType: "Risk Reduction", estimationGuidance: "Frame in terms of the severity and irreversibility of a safeguarding failure — this is not a category where a rough cost estimate is the right framing." },
+      { recommendation: "Make sure every member of staff, however new, can describe the escalation process in their own words.", benefitType: "Risk Reduction", estimationGuidance: "Test this directly by asking a random sample of staff, rather than assuming policy awareness equals practice." },
+      { recommendation: "Introduce a way of testing the process works under realistic conditions, not just on paper.", benefitType: "Risk Reduction", estimationGuidance: "Frame as verifying a critical safety system before it's actually needed, not after." },
+      { recommendation: "Review every raised concern afterwards for what worked and what didn't.", benefitType: "Risk Reduction", estimationGuidance: "Use each real concern as a genuine opportunity to strengthen the process, not just close the individual case." },
+      { recommendation: "Proactively audit safeguarding practice rather than waiting for an external inspection to find gaps.", benefitType: "Risk Reduction", estimationGuidance: "Frame as protecting both the people in your care and the organisation's ability to continue operating." },
+      { recommendation: "Maintain the standard and treat it as a non-negotiable point of organisational pride.", benefitType: "Growth Opportunity", estimationGuidance: "Use a genuinely strong, evidenced safeguarding record as a foundation for trust with families, staff and regulators alike." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We have a safeguarding policy, it's in the staff handbook.", meansCheckFor: "A policy existing is not the same as staff being able to apply it under pressure — ask a frontline staff member to explain the process in their own words, separately." },
+        { says: "We've never had a real safeguarding issue.", meansCheckFor: "Ask how concerns would actually be raised and recorded if they occurred — low recorded numbers can mean genuine safety or a process nobody actually uses." }
+      ],
+      lookFor: ["Whether staff at every level, not just management, can name the safeguarding lead", "Whether escalation records show real dates, actions and outcomes", "Consistency in how different staff describe the same procedure"],
+      warningSigns: ["Only senior staff can describe the safeguarding process in any detail", "Escalation records are vague or missing key steps", "Safeguarding training is treated as a one-off induction event rather than something refreshed"],
+      typicalEvidence: ["A specific, real example of a concern being raised, escalated and resolved appropriately", "Consistent answers from multiple staff members asked separately about the same scenario", "Training records showing regular refreshers, not just initial induction"],
+      commonExcuses: [{ excuse: "Everyone knows to just tell a manager if they're worried.", probe: "Ask exactly which manager, by what method, and what happens next — vagueness here is itself a warning sign." }],
+      bestPractice: "Strong safeguarding practice is tested, not just written down — staff at every level can describe exactly what they'd do, and the organisation actively reviews how real concerns were actually handled, not just whether a policy exists.",
+      probingQuestions: ["If I asked a new starter today what they'd do if they were worried about someone, what would they say?", "What's the last thing you changed about your safeguarding process, based on how a real concern was handled?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Reputation"],
+      narrative: "A safeguarding failure is not a cost that can be meaningfully estimated in commercial terms — it represents the most serious category of risk a care or education organisation carries, with consequences extending far beyond the business itself."
+    }),
+    ["Reduce business risk"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Mandatory Training Compliance", purpose: "Measure whether mandatory training is genuinely current and embedded, not just technically ticked off.",
+      category: "People and Capability", tags: ["Healthcare"],
+      relatedConcepts: ["Training Effectiveness", "Safeguarding Practice"]
+    }),
+    {
+      question: "How is mandatory training compliance tracked and verified, beyond the record showing a course was completed?",
+      supportingQuestions: ["Who owns tracking mandatory training across the whole team?", "Can you show me current compliance status right now, for every mandatory training area?"],
+      followUpQuestions: ["What's the last gap identified in mandatory training, and how quickly was it closed?", "How would you know if someone was working past their training renewal date?"],
+      evidenceRequired: ["Mandatory training matrix or tracker", "Training renewal and expiry records"],
+      observationPoints: [],
+      metrics: ["Proportion of staff fully compliant on all mandatory training", "Average time overdue for expired training"],
+      frequency: "Checked monthly, formally reviewed quarterly"
+    },
+    ["No central tracking of mandatory training status.", "Tracking exists but gaps aren't proactively identified.", "Gaps are identified but closure is slow and inconsistent.", "Gaps are identified quickly and closed on a consistent schedule.", "Compliance is proactively managed ahead of expiry, rarely lapsing.", "Mandatory training compliance is consistently at or near full, and demonstrable on demand."],
+    [
+      { recommendation: "Introduce a basic central tracker showing every staff member's mandatory training status.", benefitType: "Risk Reduction", estimationGuidance: "Frame in terms of the regulatory and insurance exposure of staff working past a training expiry date without anyone knowing." },
+      { recommendation: "Start proactively checking for upcoming expiries rather than discovering lapses after the fact.", benefitType: "Risk Reduction", estimationGuidance: "Estimate exposure currently sitting undetected across the team right now." },
+      { recommendation: "Set a clear, short target for closing an identified gap once found.", benefitType: "Risk Reduction", estimationGuidance: "Estimate the reduction in exposure time achieved by shortening gap-to-closure from weeks to days." },
+      { recommendation: "Build renewal scheduling ahead of expiry into a standing routine.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate management time saved by scheduled renewals versus reactive chasing." },
+      { recommendation: "Review compliance trends regularly at a leadership level, not just an admin level.", benefitType: "Risk Reduction", estimationGuidance: "Use consistent near-full compliance as a genuine risk reduction, visible at inspection." },
+      { recommendation: "Maintain the standard and be able to demonstrate full compliance on demand.", benefitType: "Growth Opportunity", estimationGuidance: "Use demonstrable, consistent compliance as a point of confidence with commissioners, regulators and families." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "Everyone's up to date on their training, HR keeps on top of it.", meansCheckFor: "Ask to see the actual current tracker, right now, rather than accepting the assurance at face value." },
+        { says: "We'd know if someone's training had lapsed.", meansCheckFor: "Ask specifically how — if there's no proactive alert or review, lapses are often discovered by accident, not by design." }
+      ],
+      lookFor: ["Whether a genuinely current tracker exists and is checked regularly", "How far in advance expiring training is actually flagged", "Whether gaps, once found, are closed quickly or linger"],
+      warningSigns: ["No one can produce current compliance status without a delay to check", "Training gaps are discovered reactively, often during an audit or inspection", "The same individuals repeatedly lapse without any change to the process"],
+      typicalEvidence: ["A current, complete training matrix showing status for every mandatory area", "A specific example of an upcoming expiry being caught and renewed before lapsing", "A consistent, short average time from gap identified to gap closed"],
+      commonExcuses: [{ excuse: "Training compliance is an admin task, it's not really a priority issue.", probe: "Ask what would happen at the next inspection if a gap were found — this usually reframes it quickly as a genuine priority." }],
+      bestPractice: "Strong mandatory training compliance is managed proactively ahead of expiry dates, with a named owner and a short, consistently met target for closing any gap that does appear.",
+      probingQuestions: ["Can you show me right now who, if anyone, has training due to expire in the next 30 days?", "What's the average time it currently takes to close a training gap once it's found?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Reputation"],
+      narrative: "Lapsed mandatory training is one of the most commonly cited findings in regulatory inspections precisely because it's so easy to let slip quietly — and one of the most avoidable, since it only requires proactive tracking, not new capability."
+    }),
+    ["Reduce business risk", "Improve staff performance"]
+  ),
+
+  // ===== EDUCATION =====
+
+  knowledgeItem(
+    concept({
+      name: "Safeguarding and Pastoral Care", purpose: "Measure whether pastoral and safeguarding support is genuinely embedded and accountable, not just policy on paper.",
+      category: "Customer Experience", tags: ["Education"],
+      relatedConcepts: ["Safeguarding Practice", "Learner Outcomes Tracking"]
+    }),
+    {
+      question: "How is pastoral and safeguarding support actually delivered and verified, beyond the existence of a policy?",
+      supportingQuestions: ["Who is the named safeguarding lead, and how visible is that role to learners and staff?", "Can you walk me through exactly what happens if a member of staff raises a concern about a learner?"],
+      followUpQuestions: ["What's the last concern raised, and how was it handled?", "How would a learner know who to talk to if something was wrong, without having to ask?"],
+      evidenceRequired: ["Safeguarding policy and escalation records", "Pastoral care case records", "Safeguarding training records"],
+      observationPoints: [],
+      metrics: ["Time from concern raised to formally addressed", "Proportion of staff with current safeguarding training"],
+      frequency: "Reviewed after every raised concern, formally audited termly"
+    },
+    ["No clear safeguarding or pastoral accountability.", "A policy exists but staff and learners aren't confident in how it works.", "A process exists and is generally followed, but isn't proactively tested.", "The process is well understood and consistently followed by staff and known to learners.", "Pastoral and safeguarding practice is proactively reviewed and improved.", "Practice is independently verified as exemplary and a genuine point of confidence for families and regulators."],
+    [
+      { recommendation: "Establish a clearly visible, named safeguarding lead that learners as well as staff can identify.", benefitType: "Risk Reduction", estimationGuidance: "This is not a category where a cost estimate is the right framing — focus on demonstrable process integrity instead." },
+      { recommendation: "Make sure learners themselves know who to approach, not just staff.", benefitType: "Customer Experience Improvement", estimationGuidance: "Test this directly by asking a random sample of learners, not just staff." },
+      { recommendation: "Introduce a way of testing the process works under realistic conditions.", benefitType: "Risk Reduction", estimationGuidance: "Frame as verifying a critical safety system before it's genuinely needed." },
+      { recommendation: "Review every raised concern afterwards for what worked and what could be strengthened.", benefitType: "Risk Reduction", estimationGuidance: "Use each real case as an opportunity to improve the process, not just close the individual case." },
+      { recommendation: "Proactively audit pastoral and safeguarding practice rather than waiting for external inspection.", benefitType: "Risk Reduction", estimationGuidance: "Frame as protecting both learners and the organisation's ability to continue operating." },
+      { recommendation: "Maintain the standard as a non-negotiable point of organisational pride.", benefitType: "Growth Opportunity", estimationGuidance: "Use a genuinely strong, evidenced record as a foundation for trust with families, regulators and prospective learners." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We have a safeguarding policy, all staff sign it.", meansCheckFor: "Signing a policy is not the same as knowing how to apply it — ask a member of frontline staff to explain the process in their own words." },
+        { says: "Our learners know they can come to any member of staff.", meansCheckFor: "Ask a learner directly, if possible, rather than accepting the assumption — awareness among learners specifically is often weaker than staff assume." }
+      ],
+      lookFor: ["Whether learners, not just staff, can name who they'd go to", "Whether escalation records show real dates, actions and outcomes", "Consistency in how different staff describe the same procedure"],
+      warningSigns: ["Only senior staff can describe the process in detail", "Escalation records are vague or missing key steps", "Safeguarding training is a one-off induction event rather than regularly refreshed"],
+      typicalEvidence: ["A specific, real example of a concern being raised, escalated and resolved appropriately", "Consistent answers from staff and, where possible, learners", "Training records showing regular refreshers, not just initial induction"],
+      commonExcuses: [{ excuse: "Everyone knows to just speak to a teacher if something's wrong.", probe: "Ask exactly which member of staff, by what method, and what happens next — vagueness here is itself a warning sign." }],
+      bestPractice: "Strong safeguarding and pastoral practice is tested from the learner's perspective as much as the staff's — a process only staff understand is only half built.",
+      probingQuestions: ["If you asked a learner today who they'd go to if something was wrong, what would they say?", "What's the last thing you changed about your process, based on how a real concern was actually handled?"]
+    }),
+    commercialImpact({
+      categories: ["Risk", "Reputation"],
+      narrative: "A safeguarding failure in an education setting is not a cost that can be meaningfully reduced to commercial terms — it represents the most serious category of risk the organisation carries, with consequences extending far beyond the business itself."
+    }),
+    ["Reduce business risk", "Improve customer experience"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Learner Outcomes Tracking", purpose: "Measure whether learner progress and outcomes are genuinely tracked and acted on, not just recorded.",
+      category: "Growth Innovation and Improvement", tags: ["Education"],
+      relatedConcepts: ["Safeguarding and Pastoral Care", "Staff Development and Retention"]
+    }),
+    {
+      question: "How are learner outcomes actually tracked and used to change what happens next, rather than just recorded?",
+      supportingQuestions: ["Who reviews learner progress data, and how often?", "Can you show me a specific example of teaching or support changing because of what the data showed?"],
+      followUpQuestions: ["What's the last learner outcome trend you noticed, and what did you do about it?", "How would a learner falling behind actually get caught early enough to intervene?"],
+      evidenceRequired: ["Learner progress or attainment tracking records", "Intervention records following identified underperformance"],
+      observationPoints: [],
+      metrics: ["Proportion of learners meeting expected progress benchmarks", "Time from underperformance identified to intervention started"],
+      frequency: "Reviewed at least termly, individual concerns reviewed as they arise"
+    },
+    ["Learner outcomes are not systematically tracked.", "Data is collected but rarely reviewed or acted on.", "Data is reviewed but rarely changes what happens for the learner.", "Data regularly informs real intervention decisions.", "Underperformance is caught early and consistently acted on.", "Outcome data actively shapes strategy and is a genuine point of pride and evidence for prospective families."],
+    [
+      { recommendation: "Start tracking a basic progress measure consistently across all learners.", benefitType: "Customer Experience Improvement", estimationGuidance: "Estimate the value of catching underperformance a term earlier than it's currently caught, in terms of learner and family outcomes and retention." },
+      { recommendation: "Introduce a regular review of tracked data, even termly to start.", benefitType: "Risk Reduction", estimationGuidance: "Estimate the cost, in reputation and retention, of a pattern of underperformance going unnoticed for a full year." },
+      { recommendation: "Ensure a specific intervention actually follows when data flags a concern.", benefitType: "Customer Experience Improvement", estimationGuidance: "Track improvement in outcomes for learners who received an early intervention versus those who didn't." },
+      { recommendation: "Shorten the time between underperformance identified and intervention started.", benefitType: "Customer Experience Improvement", estimationGuidance: "Estimate outcome improvement from earlier intervention based on past cases." },
+      { recommendation: "Use outcome trends to inform curriculum or support resourcing decisions.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate resource reallocation value from targeting support where data shows it's most needed." },
+      { recommendation: "Use a strong, evidenced outcomes record in prospective family and funder conversations.", benefitType: "Growth Opportunity", estimationGuidance: "Use demonstrable outcome improvement as a genuine differentiator in admissions or funding conversations." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "We know how our learners are doing, teachers keep track.", meansCheckFor: "Ask for the actual current tracked data on a specific learner or cohort — informal knowledge rarely survives being asked for a number." },
+        { says: "We review progress at the end of each term, that's enough.", meansCheckFor: "Ask what happens between reviews if a learner starts falling behind — a term is a long time for a gap to widen unnoticed." }
+      ],
+      lookFor: ["Whether progress data exists as a genuinely current, reviewed document", "A specific example of an intervention that followed directly from tracked data", "How quickly underperformance actually gets flagged in practice"],
+      warningSigns: ["Data is collected but nobody can describe a recent decision it actually influenced", "The same learners repeatedly underperform without a documented intervention", "Reviews happen on a fixed calendar regardless of what the data shows in between"],
+      typicalEvidence: ["Current progress tracking data reviewed on a visible schedule", "A specific, named example of an intervention triggered by tracked data", "A short, consistent time from underperformance flagged to intervention started"],
+      commonExcuses: [{ excuse: "Every learner's different, the data doesn't always tell the full story.", probe: "Agree, and ask what does complete the story — the answer usually reveals whether a genuine review process exists alongside the data." }],
+      bestPractice: "Strong learner outcomes tracking treats data as a trigger for action, not just a record — a genuinely used process can point to specific, recent interventions that followed directly from what the numbers showed.",
+      probingQuestions: ["What's a specific example of a learner whose support changed because of what the data showed?", "How long does it currently take from a learner falling behind to someone actually doing something about it?"]
+    }),
+    commercialImpact({
+      categories: ["Customer retention", "Reputation", "Business growth"],
+      narrative: "Outcome data that's collected but not acted on protects nobody — the value only appears when it changes what happens for a specific learner in time to make a difference, and that difference is what families and funders are actually paying for."
+    }),
+    ["Improve customer experience", "Prepare for growth"]
+  ),
+
+  knowledgeItem(
+    concept({
+      name: "Staff Development and Retention", purpose: "Measure whether staff development is deliberate and effective enough to genuinely support retention, in a sector where turnover is a persistent risk.",
+      category: "People and Capability", tags: ["Education"],
+      relatedConcepts: ["Recruitment", "Training Effectiveness"]
+    }),
+    {
+      question: "How is staff development actually structured, and what evidence connects it to genuine retention, not just goodwill?",
+      supportingQuestions: ["Who owns individual staff development plans?", "Can you show me a specific example of development leading to someone staying who might otherwise have left?"],
+      followUpQuestions: ["What's the most common reason a staff member has left in the last year?", "How would you know if someone was at risk of leaving before they actually resigned?"],
+      evidenceRequired: ["Staff development plan records", "Exit interview or leaver data"],
+      observationPoints: [],
+      metrics: ["Staff turnover rate", "Proportion of staff with an active, current development plan"],
+      frequency: "Reviewed at least annually per individual, turnover reviewed quarterly"
+    },
+    ["No structured staff development.", "Development happens informally and inconsistently.", "Development plans exist but aren't tied to retention risk.", "Development is tracked and reasonably informs retention conversations.", "At-risk staff are identified proactively and supported before they consider leaving.", "Staff development and retention are a genuine, evidenced organisational strength."],
+    [
+      { recommendation: "Introduce a basic development conversation for every member of staff, even informally at first.", benefitType: "Cost Saving", estimationGuidance: "Estimate the cost of the last staff departure, including recruitment, induction and lost continuity for learners." },
+      { recommendation: "Start recording development plans so they're consistent, not just verbal.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate management time saved by having a clear record versus relying on memory." },
+      { recommendation: "Explicitly connect development planning to retention conversations.", benefitType: "Cost Saving", estimationGuidance: "Estimate turnover cost avoided if development directly addressed the most common reason staff leave." },
+      { recommendation: "Track turnover reasons and feed them directly back into development priorities.", benefitType: "Efficiency Improvement", estimationGuidance: "Estimate reduction in turnover achievable by addressing the single most common leaving reason." },
+      { recommendation: "Build a way of identifying at-risk staff before they resign, not after.", benefitType: "Cost Saving", estimationGuidance: "Estimate the value of retaining even one experienced staff member who would otherwise have left." },
+      { recommendation: "Maintain the standard and use a strong retention record as evidence of organisational health.", benefitType: "Growth Opportunity", estimationGuidance: "Use demonstrably low turnover as a point of confidence for families, funders and prospective staff alike." }
+    ],
+    guidance({
+      ifClientSays: [
+        { says: "Turnover's just high in this sector, it's normal.", meansCheckFor: "Ask what the actual turnover rate is, and whether it's genuinely been benchmarked against comparable organisations rather than assumed to be unavoidable." },
+        { says: "We do appraisals every year, that covers development.", meansCheckFor: "Ask whether appraisals actually produce a specific development plan that's followed up, or whether they're a one-off conversation with no continuation." }
+      ],
+      lookFor: ["Whether development plans exist as living documents that get revisited, not filed away", "Evidence of a specific staff member being retained because of a development conversation", "Whether exit data is actually collected and reviewed"],
+      warningSigns: ["The same leaving reason recurs without any visible response", "Development conversations happen once a year and are never mentioned again", "No one can describe a specific example of development influencing a retention decision"],
+      typicalEvidence: ["Current, revisited development plans tied to individual staff", "A specific example of a development conversation that led to someone staying", "Exit interview themes tracked and referenced in later decisions"],
+      commonExcuses: [{ excuse: "We can't compete with other employers on pay, so people will always leave.", probe: "Ask what staff have actually said in exit interviews — pay is rarely the sole factor, and development or recognition often matters more than assumed." }],
+      bestPractice: "Strong staff development in education ties individual growth plans directly to known retention risks, treating a leaving conversation as much later evidence of a gap that development could have addressed earlier.",
+      probingQuestions: ["What's the most common reason someone's actually given for leaving in the last year?", "Can you describe a specific staff member you believe stayed because of a development conversation?"]
+    }),
+    commercialImpact({
+      categories: ["Reduced profitability", "Poor productivity", "Customer retention"],
+      narrative: "Staff turnover in education costs far more than recruitment fees — it disrupts continuity for learners, burdens remaining staff, and if left unaddressed becomes a visible pattern that affects the organisation's reputation with families as much as its own team."
+    }),
+    ["Improve staff performance", "Reduce costs"]
   )
 ];
 
@@ -740,7 +1264,7 @@ export const conceptNames = knowledgeBase.map((k) => k.concept.name);
 // behave like "Other" until industry-specific modules are written for
 // them, same honest pattern as everywhere else in this library.
 export const industryOptions = [
-  "Logistics", "Manufacturing", "Retail", "Hospitality", "Professional Services",
+  "Logistics", "Manufacturing", "Engineering", "Retail", "Hospitality", "Professional Services",
   "Construction", "Healthcare", "Education", "Technology and IT", "Agriculture",
   "Financial Services", "Real Estate", "Automotive", "Energy and Utilities",
   "Creative and Media", "Non-Profit and Charity", "Wholesale and Distribution",

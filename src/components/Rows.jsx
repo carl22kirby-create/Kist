@@ -1,12 +1,17 @@
-export function ClientRows({ clients, setPage, setSelectedClient }) {
+import { getClientScoreSummary } from "../utils/scoring.js";
+
+export function ClientRows({ data, setPage, setSelectedClient }) {
   return (
     <div>
-      {clients.map((c) => (
-        <button className="row" key={c.id} onClick={() => { setSelectedClient(c.id); setPage("client"); }}>
-          <span><strong>{c.name}</strong><small>{c.industry} · {c.health}</small></span>
-          <b>{c.score}</b>
-        </button>
-      ))}
+      {data.clients.map((c) => {
+        const { overall, tier, hasAssessment } = getClientScoreSummary(data, c.id);
+        return (
+          <button className="row" key={c.id} onClick={() => { setSelectedClient(c.id); setPage("client"); }}>
+            <span><strong>{c.name}</strong><small>{c.industry} · {hasAssessment ? tier.tier : "Not yet assessed"}</small></span>
+            <b>{hasAssessment ? overall : "—"}</b>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -24,15 +29,22 @@ export function ScheduleRows({ schedule }) {
   );
 }
 
-export function ScoreRows({ clients }) {
+export function ScoreRows({ data }) {
   return (
     <div>
-      {clients.map((c) => (
-        <div className="row" key={c.id}>
-          <span><strong>{c.name}</strong><small>Previous {c.previous} · Current {c.score}</small></span>
-          <b>{c.score - c.previous >= 0 ? "+" : ""}{c.score - c.previous}</b>
-        </div>
-      ))}
+      {data.clients.map((c) => {
+        const { overall, previousOverall, hasAssessment } = getClientScoreSummary(data, c.id);
+        const delta = hasAssessment && previousOverall != null ? overall - previousOverall : null;
+        return (
+          <div className="row" key={c.id}>
+            <span>
+              <strong>{c.name}</strong>
+              <small>{previousOverall != null ? `Previous ${previousOverall} · ` : ""}Current {hasAssessment ? overall : "Not yet assessed"}</small>
+            </span>
+            <b>{delta != null ? `${delta >= 0 ? "+" : ""}${delta}` : "—"}</b>
+          </div>
+        );
+      })}
     </div>
   );
 }
