@@ -525,3 +525,14 @@ label.wide{grid-column:span 2}
 /* --- Visit Workflow: Pre-Visit Research stage --- */
 .previsit-stage-card{border:1px solid rgba(69,165,255,.35);background:rgba(69,165,255,.06);border-radius:12px;padding:16px;margin-bottom:14px}
 .previsit-stage-card h4{margin:0 0 6px}
+
+/* --- Guidance generation via KIST Brain --- */
+.guidance-generate:disabled{opacity:.6;cursor:wait}
+
+/* --- Suggest Related Answers --- */
+.suggest-related-button{border-color:rgba(104,216,87,.5);background:rgba(104,216,87,.08);color:#a8e89c}
+.suggestions-box{display:grid;gap:10px;margin-top:10px}
+.suggestion-card{border:1px solid rgba(104,216,87,.35);background:rgba(104,216,87,.06);border-radius:12px;padding:14px}
+.suggestion-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.suggestion-score{color:var(--green);font-weight:700;white-space:nowrap}
+.suggestion-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}

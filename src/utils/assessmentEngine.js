@@ -1,6 +1,19 @@
 import { questionsSeed, inferEvidenceType } from "../data/seedData.js";
 import { knowledgeBase, dependencyQuestions } from "../data/knowledgeBase.js";
 
+// Cuts at the last full word within the limit rather than mid-word, and
+// marks that something was actually cut. The previous version sliced at
+// exactly 60 characters regardless of where that landed — visibly cutting
+// words like "competitors" down to "compet" with no ellipsis, no
+// indication anything had been shortened at all.
+function truncateAtWord(text, maxLength) {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  const cut = trimmed.slice(0, maxLength);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + "…";
+}
+
 // Universal questions weren't authored with the same per-concept scoring
 // and improvement detail as the Knowledge Base concepts — this generic
 // template is applied to all of them so every item in the system has the
@@ -96,7 +109,7 @@ const finalisedKnowledgeItems = knowledgeBase.map((entry, i) => ({
 
 const universalItems = questionsSeed.map((q) => ({
   ...q,
-  concept: q.concept || q.question.split(",")[0].replace(/^(Explain|Describe|What|How|Walk me through)\s*/i, "").slice(0, 60),
+  concept: q.concept || truncateAtWord(q.question.split(",")[0].replace(/^(Explain|Describe|What|How|Walk me through)\s*/i, ""), 100),
   conceptPurpose: null,
   relatedConcepts: [],
   relevantObjectives: [],

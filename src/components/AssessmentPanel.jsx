@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { escalationFlagOptions } from "../data/knowledgeBase.js";
 import QuickScorePanel from "./QuickScorePanel.jsx";
 import EvidenceUploader from "./EvidenceUploader.jsx";
+import { generateGuidance, suggestRelatedAnswers } from "../api.js";
 import {
   categoryScores, calculateOverall, isItemComplete, isImprovementPlanRequired, isImprovementPlanComplete,
   saveAssessmentRound, getPreviousRoundAnswer, getLatestRound, getAssessmentStatus, getTrafficLight,
@@ -17,6 +18,13 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
   const [roundLabel, setRoundLabel] = useState("");
   const [showRoundBox, setShowRoundBox] = useState(false);
   const [showGuidance, setShowGuidance] = useState(false);
+  const [generatedGuidance, setGeneratedGuidance] = useState({});
+  const [guidanceLoading, setGuidanceLoading] = useState(false);
+  const [guidanceError, setGuidanceError] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestError, setSuggestError] = useState("");
+  const [suggestChecked, setSuggestChecked] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [quickScoreMode, setQuickScoreMode] = useState(false);
   const [quickScorePriorityOnly, setQuickScorePriorityOnly] = useState(false);
@@ -35,6 +43,53 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
   }, [answers.length, currentQuestion]);
   const safeCurrentQuestion = Math.min(Math.max(currentQuestion, 0), Math.max(answers.length - 1, 0));
   const q = answers[safeCurrentQuestion];
+  const effectiveGuidance = q?.guidanceContent || generatedGuidance[q?.id];
+
+  useEffect(() => {
+    setSuggestions([]);
+    setSuggestChecked(null);
+    setSuggestError("");
+  }, [q?.id]);
+
+  function handleGenerateGuidance() {
+    setGuidanceLoading(true);
+    setGuidanceError("");
+    generateGuidance(q)
+      .then((result) => setGeneratedGuidance((prev) => ({ ...prev, [q.id]: result.guidance })))
+      .catch((err) => setGuidanceError(err.message))
+      .finally(() => setGuidanceLoading(false));
+  }
+
+  // Only ever proposes — nothing here writes a score until the consultant
+  // explicitly accepts that specific suggestion below.
+  function handleCheckSuggestions() {
+    const candidateQuestions = answers
+      .filter((a) => a.category === q.category && a.score === 0 && a.id !== q.id)
+      .map((a) => ({ questionId: a.id, concept: a.concept, question: a.question }));
+
+    setSuggestLoading(true);
+    setSuggestError("");
+    setSuggestChecked(q.id);
+    suggestRelatedAnswers({ sourceConcept: q.concept, sourceNotes: q.notes, sourceEvidence: q.evidence, candidateQuestions })
+      .then((result) => setSuggestions(result.suggestions || []))
+      .catch((err) => setSuggestError(err.message))
+      .finally(() => setSuggestLoading(false));
+  }
+
+  function acceptSuggestion(suggestion) {
+    const target = answers.find((a) => a.id === suggestion.questionId);
+    if (!target) return;
+    update(target.id, {
+      score: suggestion.suggestedScore,
+      notes: target.notes ? `${target.notes}\n\n(From ${q.concept}: ${suggestion.justification})` : `Suggested from ${q.concept}: ${suggestion.justification}`,
+      justification: suggestion.justification
+    });
+    setSuggestions((prev) => prev.filter((s) => s.questionId !== suggestion.questionId));
+  }
+
+  function dismissSuggestion(questionId) {
+    setSuggestions((prev) => prev.filter((s) => s.questionId !== questionId));
+  }
   const objectivePriority = getObjectivePriority(q, selectedObjectives);
   const priorityUnscored = selectedObjectives.length > 0
     ? sortByObjectivePriority(answers, selectedObjectives).filter((a) => getObjectivePriority(a, selectedObjectives) > 0 && a.score === 0).slice(0, 6)
@@ -284,41 +339,48 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
           </div>
         )}
 
-        <button className="guidance-toggle" onClick={() => setShowGuidance(!showGuidance)}>
-          {showGuidance ? "Hide" : "Show"} Consultant Guidance {q.guidanceContent ? "" : "(not yet written for this item)"}
-        </button>
-        {showGuidance && q.guidanceContent && (
+        {effectiveGuidance ? (
+          <button className="guidance-toggle" onClick={() => setShowGuidance(!showGuidance)}>
+            {showGuidance ? "Hide" : "Show"} Consultant Guidance
+          </button>
+        ) : (
+          <button className="guidance-toggle guidance-generate" onClick={handleGenerateGuidance} disabled={guidanceLoading}>
+            {guidanceLoading ? "Asking KIST Brain..." : "Generate Consultant Guidance with KIST Brain"}
+          </button>
+        )}
+        {guidanceError && <p className="ai-error">Couldn't generate guidance: {guidanceError}</p>}
+        {showGuidance && effectiveGuidance && (
           <div className="guidance-box">
-            {q.guidanceContent.ifClientSays?.length > 0 && (
+            {effectiveGuidance.ifClientSays?.length > 0 && (
               <div className="guidance-section">
                 <b>If the Client Says...</b>
-                {q.guidanceContent.ifClientSays.map((item, i) => (
+                {effectiveGuidance.ifClientSays.map((item, i) => (
                   <div className="guidance-pair" key={i}><span className="guidance-quote">"{item.says}"</span><span className="guidance-response">→ {item.meansCheckFor}</span></div>
                 ))}
               </div>
             )}
-            {q.guidanceContent.lookFor?.length > 0 && (
-              <div className="guidance-section"><b>Look For</b><ul>{q.guidanceContent.lookFor.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+            {effectiveGuidance.lookFor?.length > 0 && (
+              <div className="guidance-section"><b>Look For</b><ul>{effectiveGuidance.lookFor.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
             )}
-            {q.guidanceContent.warningSigns?.length > 0 && (
-              <div className="guidance-section"><b>Warning Signs</b><ul>{q.guidanceContent.warningSigns.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+            {effectiveGuidance.warningSigns?.length > 0 && (
+              <div className="guidance-section"><b>Warning Signs</b><ul>{effectiveGuidance.warningSigns.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
             )}
-            {q.guidanceContent.typicalEvidence?.length > 0 && (
-              <div className="guidance-section"><b>Typical Evidence</b><ul>{q.guidanceContent.typicalEvidence.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+            {effectiveGuidance.typicalEvidence?.length > 0 && (
+              <div className="guidance-section"><b>Typical Evidence</b><ul>{effectiveGuidance.typicalEvidence.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
             )}
-            {q.guidanceContent.commonExcuses?.length > 0 && (
+            {effectiveGuidance.commonExcuses?.length > 0 && (
               <div className="guidance-section">
                 <b>Common Excuses</b>
-                {q.guidanceContent.commonExcuses.map((item, i) => (
+                {effectiveGuidance.commonExcuses.map((item, i) => (
                   <div className="guidance-pair" key={i}><span className="guidance-quote">"{item.excuse}"</span><span className="guidance-response">→ {item.probe}</span></div>
                 ))}
               </div>
             )}
-            {q.guidanceContent.bestPractice && (
-              <div className="guidance-section"><b>Industry Best Practice</b><p>{q.guidanceContent.bestPractice}</p></div>
+            {effectiveGuidance.bestPractice && (
+              <div className="guidance-section"><b>Industry Best Practice</b><p>{effectiveGuidance.bestPractice}</p></div>
             )}
-            {q.guidanceContent.probingQuestions?.length > 0 && (
-              <div className="guidance-section"><b>Questions to Probe Deeper</b><ul>{q.guidanceContent.probingQuestions.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+            {effectiveGuidance.probingQuestions?.length > 0 && (
+              <div className="guidance-section"><b>Questions to Probe Deeper</b><ul>{effectiveGuidance.probingQuestions.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
             )}
           </div>
         )}
@@ -338,6 +400,36 @@ export default function AssessmentPanel({ data, setData, clientId, answers, setA
         )}
         <textarea placeholder="Evidence reviewed" value={q.evidence} onChange={(e) => update(q.id, { evidence: e.target.value })} />
         <EvidenceUploader client={client} setData={setData} stage="Assessment" linkedQuestionId={q.id} />
+
+        <button className="guidance-toggle suggest-related-button" onClick={handleCheckSuggestions} disabled={suggestLoading}>
+          {suggestLoading ? "Checking with KIST Brain..." : "Check if this also answers other questions in this category"}
+        </button>
+        <p className="muted-small">Suggestions are proposed only — nothing is scored until you accept it.</p>
+        {suggestError && <p className="ai-error">Couldn't check for related answers: {suggestError}</p>}
+        {suggestChecked === q.id && !suggestLoading && !suggestError && suggestions.length === 0 && (
+          <p className="muted-small">No other unanswered question in this category is clearly answered by these notes.</p>
+        )}
+        {suggestChecked === q.id && suggestions.length > 0 && (
+          <div className="suggestions-box">
+            {suggestions.map((s) => {
+              const target = answers.find((a) => a.id === s.questionId);
+              if (!target) return null;
+              return (
+                <div className="suggestion-card" key={s.questionId}>
+                  <div className="suggestion-head">
+                    <strong>{target.concept}</strong>
+                    <span className="suggestion-score">Suggested: {s.suggestedScore}/5</span>
+                  </div>
+                  <p className="muted-small">{s.justification}</p>
+                  <div className="suggestion-actions">
+                    <button className="secondary" onClick={() => dismissSuggestion(s.questionId)}>Dismiss</button>
+                    <button className="primary" onClick={() => acceptSuggestion(s)}>Accept</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <h4 className="section-heading">Consultant Assessment</h4>
         <div className="consultant-assessment-grid">

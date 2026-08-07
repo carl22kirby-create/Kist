@@ -133,6 +133,24 @@ export function recordPayment(payment) {
   }).then(handle);
 }
 
+export function suggestRelatedAnswers({ sourceConcept, sourceNotes, sourceEvidence, candidateQuestions }) {
+  return fetch(`${BASE}/ai-ask`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "suggest-related", sourceConcept, sourceNotes, sourceEvidence, candidateQuestions })
+  }).then(handle);
+}
+
+export function generateGuidance(item) {
+  return fetch(`${BASE}/ai-ask`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "guidance", questionId: item.id, category: item.category, concept: item.concept, question: item.question, evidenceType: item.evidenceType })
+  }).then(handle);
+}
+
 export function getCommercialOverview() {
   return fetch(`${BASE}/documents?type=overview`, { credentials: "include" }).then(handle);
 }
