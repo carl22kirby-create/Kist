@@ -22,6 +22,10 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
   useEffect(() => { setCurrentQuestion(0); }, [clientId]);
 
   function setAnswers(next) { setClientAssessment(data, setData, client.id, next); }
+  const preVisitItems = answers.filter((a) => a.preVisitResearch);
+  function updatePreVisitItem(id, updates) {
+    setAnswers(answers.map((a) => a.id === id ? { ...a, ...updates } : a));
+  }
   function chooseClient(id) { setClientId(id); if (setSelectedClient) setSelectedClient(id); }
   function addAttendee() { if (attendee.trim()) { setAttendees([...attendees, attendee.trim()]); setAttendee(""); } }
 
@@ -62,7 +66,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
       <Toast message={toastMessage} onDone={() => setToastMessage("")} />
       <div className="visit-metrics">
         <div className="metric"><span>Client</span><strong>{client?.name}</strong></div>
-        <div className="metric"><span>Stage</span><strong>{stage + 1}/10</strong></div>
+        <div className="metric"><span>Stage</span><strong>{stage + 1}/{visitStages.length}</strong></div>
         <div className="metric"><span>Progress</span><strong>{Math.round(((stage + 1) / visitStages.length) * 100)}%</strong></div>
       </div>
       <div className="visit-shell">
@@ -71,6 +75,29 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
           <h2>{visitStages[stage]}</h2>
 
           {stage === 0 && (
+            <div>
+              <label>Client<select value={clientId} onChange={(e) => chooseClient(e.target.value)}>{data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+              <p className="muted">Score these from your desk, before the visit — nothing here needs the client present. Everything else in this workflow needs you on site.</p>
+              {preVisitItems.length === 0 ? (
+                <p className="muted-small">Nothing flagged as pre-visit research for this client's profile.</p>
+              ) : (
+                preVisitItems.map((item) => (
+                  <div className="previsit-stage-card" key={item.id}>
+                    <h4>{item.concept}</h4>
+                    <p className="muted-small">{item.question}</p>
+                    <div className="score-buttons">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} className={item.score === n ? "selected" : ""} onClick={() => updatePreVisitItem(item.id, { score: n })}>{n}</button>
+                      ))}
+                    </div>
+                    <textarea placeholder="What did you find?" value={item.notes} onChange={(e) => updatePreVisitItem(item.id, { notes: e.target.value })} />
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {stage === 1 && (
             <div>
               <label>Client<select value={clientId} onChange={(e) => chooseClient(e.target.value)}>{data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
               <p className="muted">Confirm the agenda, expected finish time and attendees.</p>
@@ -92,9 +119,9 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
             </div>
           )}
 
-          {stage === 1 && <Interview notes={notes} setNotes={setNotes} />}
+          {stage === 2 && <Interview notes={notes} setNotes={setNotes} />}
 
-          {stage === 2 && (
+          {stage === 3 && (
             <div>
               <p className="muted">Capture site observations, risks and opportunities. Add photos as you go — each one gets its own caption, and you choose whether it appears in the client report.</p>
               <textarea placeholder="Walkthrough observations" value={notes.walkthrough || ""} onChange={(e) => setNotes({ ...notes, walkthrough: e.target.value })} />
@@ -103,9 +130,9 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
             </div>
           )}
 
-          {stage === 3 && <AssessmentPanel data={data} setData={setData} clientId={client.id} answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />}
+          {stage === 4 && <AssessmentPanel data={data} setData={setData} clientId={client.id} answers={answers} setAnswers={setAnswers} currentQuestion={currentQuestion} setCurrentQuestion={setCurrentQuestion} />}
 
-          {stage === 4 && (
+          {stage === 5 && (
             <div>
               <p className="muted">Request and review supporting documents — policies, KPI reports, certificates, anything that backs up what's been said. Upload copies here so they're kept with the visit.</p>
               <textarea placeholder="Evidence review notes" value={notes.evidence || ""} onChange={(e) => setNotes({ ...notes, evidence: e.target.value })} />
@@ -114,7 +141,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
             </div>
           )}
 
-          {stage === 5 && (
+          {stage === 6 && (
             <div>
               <p className="muted">Overall score so far: <strong className="gold">{calculateOverall(answers)}/100</strong></p>
               <p className="muted">The full report pulls live from this assessment's category scores, notes and actions, formatted for the client.</p>
@@ -122,14 +149,14 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
             </div>
           )}
 
-          {stage === 6 && (
+          {stage === 7 && (
             <div>
               <p className="muted">Present live to the client, full screen, using the arrow keys or the buttons to move between slides.</p>
               <button className="primary" onClick={() => setPage("present")}>Start Presentation</button>
             </div>
           )}
 
-          {stage === 7 && (
+          {stage === 8 && (
             <div>
               <p className="muted">Built automatically from the improvement plans already recorded against low scoring BPIs, bucketed by target date where one's been set, otherwise by priority. This organises what you've already entered — it doesn't invent anything, so review and adjust before this goes in front of the client.</p>
               <div className="roadmap-columns">
@@ -157,7 +184,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
             </div>
           )}
 
-          {stage === 8 && (
+          {stage === 9 && (
             <div>
               <p className="muted">Schedule the next visit properly — this creates a real calendar entry, not just a note.</p>
               <div className="form-grid">
@@ -177,7 +204,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
             </div>
           )}
 
-          {stage === 9 && (
+          {stage === 10 && (
             <div>
               <p className="muted">Confirm everything's recorded, then save the visit. This marks the client active and adds a timeline entry — it doesn't lock anything, you can always come back and add more.</p>
               <button className="primary finish-save-button" onClick={finishVisit}>Save and Finish Visit</button>

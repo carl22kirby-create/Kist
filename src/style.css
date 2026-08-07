@@ -521,3 +521,7 @@ button.quote-row:hover{border-color:var(--gold)}
 .expense-row{grid-template-columns:1fr auto auto auto}
 .receipt-link{padding:8px 12px;font-size:12px}
 label.wide{grid-column:span 2}
+
+/* --- Visit Workflow: Pre-Visit Research stage --- */
+.previsit-stage-card{border:1px solid rgba(69,165,255,.35);background:rgba(69,165,255,.06);border-radius:12px;padding:16px;margin-bottom:14px}
+.previsit-stage-card h4{margin:0 0 6px}
