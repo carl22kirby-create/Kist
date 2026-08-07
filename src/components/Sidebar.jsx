@@ -44,7 +44,7 @@ export default function Sidebar({ page, setPage, saveStatus, onLogout }) {
       ))}
       <button className="logout-button" onClick={onLogout}><LogOut size={17} /> Log Out</button>
       <div className="version">
-        Version 6.22.0<br /><span>Suggest Related Answers</span>
+        Version 6.23.0<br /><span>Pre-Visit Research expanded</span>
         {saveStatus && <div className={`sync-status ${saveStatus}`}>{STATUS_LABEL[saveStatus] || ""}</div>}
       </div>
     </aside>

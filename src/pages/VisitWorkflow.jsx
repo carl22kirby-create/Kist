@@ -91,6 +91,7 @@ export default function VisitWorkflow({ data, setData, selectedClient, setSelect
                       ))}
                     </div>
                     <textarea placeholder="What did you find?" value={item.notes} onChange={(e) => updatePreVisitItem(item.id, { notes: e.target.value })} />
+                    <EvidenceUploader client={client} setData={setData} stage="Pre-Visit Research" linkedQuestionId={item.id} />
                   </div>
                 ))
               )}
