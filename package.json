@@ -1,6 +1,6 @@
 {
   "name": "kist-one",
-  "version": "6.24.0",
+  "version": "6.24.1",
   "private": true,
   "type": "module",
   "scripts": {
